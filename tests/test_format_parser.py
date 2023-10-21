@@ -3,6 +3,8 @@ from pathlib import Path
 from packaging.specifiers import SpecifierSet
 from packaging.requirements import Requirement
 
+import pytest
+
 example_folder = Path(__file__).parent / "example_files"
 
 pep_723_ex_raw = """
@@ -84,3 +86,17 @@ def test_pep_example_text_script_dependencies():
     parser = PEP723Parser.from_string(pep_723_ex_raw)
     output = parser.script_dependencies
     assert output == pep_723_script_dependencies
+
+
+class TestRaises:
+    def test_new_block_without_close(self):
+        test_file = example_folder / "invalid_double_block.py"
+        parser = PEP723Parser.from_path(test_file)
+        with pytest.raises(SyntaxError):
+            _ = parser.script_dependencies
+
+    def test_block_not_closed(self):
+        test_file = example_folder / "pep-723-sample-noclose.py"
+        parser = PEP723Parser.from_path(test_file)
+        with pytest.raises(SyntaxError):
+            _ = parser.script_dependencies

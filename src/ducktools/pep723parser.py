@@ -65,7 +65,7 @@ class PEP723Parser:
         for line in iterable_src:
             if in_block:
                 if not line.startswith("#"):
-                    raise SyntaxError(f"Block {block_name} not closed correctly.")
+                    raise SyntaxError(f"Block {block_name!r} not closed correctly.")
 
                 line = line.removeprefix("#").removeprefix(" ")
                 if line.strip() == "///":
@@ -76,6 +76,12 @@ class PEP723Parser:
                     # Reset blocks
                     in_block = False
                     block_name, block_data = None, []
+                elif line.startswith("/// "):
+                    invalid_block_name = line[3:].strip()
+                    raise SyntaxError(
+                        f"New block {invalid_block_name!r} encountered before "
+                        f"block {block_name!r} closed."
+                    )
                 else:
                     block_data.append(line)
             else:
