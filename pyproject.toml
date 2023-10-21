@@ -1,0 +1,40 @@
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name="ducktools-pep723parser"
+description="LazyImporter class to manage imports on attribute access."
+authors = [
+  { name="David C Ellis" },
+]
+readme="README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "tomli >= 1.1.0 ; python_version < '3.11'",
+    "packaging >= 23.2",
+    "ducktools-lazyimporter >= 0.1.1",
+]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+dynamic = ['version']
+license = {file = "LICENSE.md"}
+
+[project.optional-dependencies]
+testing = ["pytest", "pytest-cov"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "ducktools.pep723parser.__version__"}
