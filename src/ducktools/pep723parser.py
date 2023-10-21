@@ -10,9 +10,9 @@ from ducktools.lazyimporter import LazyImporter, ModuleImport, FromImport
 
 __version__ = "v0.0.1"
 
-if sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):  # pragma: no cover
     _toml_import = ModuleImport("tomllib")
-else:
+else:  # pragma: no cover
     _toml_import = ModuleImport("tomli", asname="tomllib")
 
 # Lazily import tomllib and packaging
@@ -27,10 +27,11 @@ _laz = LazyImporter(
 
 def _removeprefix(txt, prefix):
     # Python 3.8 has no remove_prefix method on str
+    # Copied from the PEP that added it with 'self' changed to 'txt'
     if txt.startswith(prefix):
         return txt[len(prefix):]
     else:
-        return txt[:]
+        return txt[:]  # pragma: no cover
 
 
 class PEP723Parser:
@@ -101,7 +102,10 @@ class PEP723Parser:
         for line in iterable_src:
             if in_block:
                 if not line.startswith("#"):
-                    raise SyntaxError(f"Block {block_name!r} not closed correctly.")
+                    raise SyntaxError(
+                        f"Block {block_name} not closed correctly. "
+                        f"A '# ///' block is needed to indicate the end of the block."
+                    )
 
                 line = _removeprefix(_removeprefix(line, "#"), " ")
                 if line.strip() == "///":
