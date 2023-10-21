@@ -37,6 +37,8 @@ pep_723_ex_extracted_dict = {
     }
 }
 
+pep_723_plain_script_dependencies = pep_723_ex_extracted_dict["run"]
+
 pep_723_script_dependencies = {
     "requires-python": SpecifierSet(">=3.11"),
     "dependencies": [
@@ -61,6 +63,9 @@ class TestParseOutputFile:
 
         assert output == pep_723_ex_extracted_dict
 
+    def test_pep_example_file_plain_script_dependencies(self):
+        output = self.parser.plain_script_dependencies
+        assert output == pep_723_plain_script_dependencies
 
     def test_pep_example_file_script_dependencies(self):
         output = self.parser.script_dependencies

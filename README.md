@@ -64,6 +64,11 @@ parser.get_pyproject_toml()
 parser.pyproject_toml
 
 # Return the [run] block from the pyproject block
+# requires-python and dependencies values will exist
+# as empty data even if not defined in the block
+parser.plain_script_dependencies
+
+# Return the [run] block from the pyproject block
 # with requires-python and dependencies values processed
 # by packaging into SpecifierSet and Requirement objects
 parser.script_dependencies

@@ -206,6 +206,28 @@ class PEP723Parser:
             return None
 
     @property
+    def plain_script_dependencies(self):
+        requires_python = None
+        dependencies = []
+
+        try:
+            dep_data = self.get_pyproject_toml()
+        except KeyError:
+            run_block = {}
+        else:
+            run_block = dep_data.get("run", {})
+
+            # Ensure requires_python and dependencies keys exist
+            requires_python = run_block.pop(self.PYTHON_VERSION_KEY, None)
+            dependencies = run_block.pop(self.DEPENDENCIES_KEY, [])
+
+        # Ensure requires_python and dependencies keys exist
+        run_block[self.PYTHON_VERSION_KEY] = requires_python
+        run_block[self.DEPENDENCIES_KEY] = dependencies
+
+        return run_block
+
+    @property
     def script_dependencies(self):
         """
         Get the requirements as packaging Version and Requirement objects.
@@ -230,7 +252,7 @@ class PEP723Parser:
             if pyver:
                 requires_python = _laz.SpecifierSet(pyver)
 
-            deps = run_block.pop(self.DEPENDENCIES_KEY, None)
+            deps = run_block.pop(self.DEPENDENCIES_KEY, [])
             if deps:
                 dependencies = [
                     _laz.Requirement(spec) for spec in deps
