@@ -106,13 +106,10 @@ class TestRaises:
         parser = PEP723Parser.from_path(test_file)
 
         with pytest.raises(ValueError):
-            _ = parser.raw_toml_blocks
+            _ = parser.metadata_blocks
 
         with pytest.raises(ValueError):
-            _ = parser.toml_blocks
-
-        with pytest.raises(ValueError):
-            _ = list(parser.iter_raw_toml_blocks())
+            _ = list(parser.iter_raw_metadata_blocks())
 
 
 class TestMissing:
@@ -122,10 +119,7 @@ class TestMissing:
         parser = PEP723Parser.from_path(self.test_file)
 
         with pytest.raises(KeyError):
-            _ = parser.get_first_raw_toml("Missing")
-
-        with pytest.raises(KeyError):
-            _ = parser.get_first_toml_block("Missing")
+            _ = parser.get_first_metadata_block("Missing")
 
         with pytest.raises(KeyError):
             _ = parser.get_pyproject_raw()

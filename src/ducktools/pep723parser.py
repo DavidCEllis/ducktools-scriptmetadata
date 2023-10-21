@@ -15,6 +15,7 @@ if sys.version_info >= (3, 11):
 else:
     _toml_import = ModuleImport("tomli", asname="tomllib")
 
+# Lazily import tomllib and packaging
 _laz = LazyImporter(
     [
         _toml_import,
@@ -40,11 +41,12 @@ class PEP723Parser:
     PEP723 metadata blocks.
 
     get_* methods will raise a KeyError exception if the block is not found
-    Properties will instead return None if the block is not found
+    properties will instead return None if the block is not found
     """
-
     PYTHON_VERSION_KEY = "requires-python"
     DEPENDENCIES_KEY = "dependencies"
+
+    __slots__ = ("src", "src_path", "encoding")
 
     def __init__(self, *, src=None, src_path=None, encoding="utf-8"):
         if src and src_path:
@@ -58,10 +60,26 @@ class PEP723Parser:
 
     @classmethod
     def from_path(cls, src_path, encoding="utf-8"):
+        """
+        Create a PEP723Parser instance given the path to a source file
+
+        :param src_path: path to a python source file to search for PEP723 metadata
+        :type src_path: str | os.PathLike
+        :param encoding: encoding to use when opening the file.
+        :type encoding: str
+        :return: PEP723Parser instance
+        """
         return cls(src_path=src_path, encoding=encoding)
 
     @classmethod
     def from_string(cls, src):
+        """
+        Create a PEP723Parser instance given source code as a string
+
+        :param src: source code to search for PEP723 metadata.
+        :type src: str
+        :return: PEP723Parser instance
+        """
         return cls(src=src)
 
     @staticmethod
@@ -118,7 +136,13 @@ class PEP723Parser:
                 f"A '# ///' block is needed to indicate the end of the block."
             )
 
-    def iter_raw_toml_blocks(self):
+    def iter_raw_metadata_blocks(self):
+        """
+        Iterator that returns raw PEP723 metadata blocks.
+
+        :yield: block_name, block_text pairs
+        :ytype: tuple[str, str]
+        """
         if self.src:
             data = io.StringIO(self.src)
             yield from self._parse_source_blocks(data)
@@ -126,43 +150,23 @@ class PEP723Parser:
             with open(self.src_path, 'r', encoding=self.encoding) as data:
                 yield from self._parse_source_blocks(data)
 
-    def iter_toml_blocks(self):
-        for block_name, raw_data in self.iter_raw_toml_blocks():
-            yield block_name, _laz.tomllib.loads(raw_data)
-
-    def get_first_raw_toml(self, name):
-        for block_name, block_text in self.iter_raw_toml_blocks():
+    def get_first_metadata_block(self, name):
+        for block_name, block_text in self.iter_raw_metadata_blocks():
             if block_name == name:
                 return block_text
         raise KeyError(f"{name!r} block not found in file.")
 
-    def get_first_toml_block(self, name):
-        raw_toml = self.get_first_raw_toml(name)
-        return _laz.tomllib.loads(raw_toml)
-
     @property
-    def raw_toml_blocks(self):
+    def metadata_blocks(self):
         """
-        Get the raw toml text blocks as a dictionary.
+        Get the raw metadata blocks as a dictionary.
 
         :return: Dictionary of block name: toml_text
         :rtype: dict[str, str]
         """
         return {
             block_name: raw_toml
-            for block_name, raw_toml in self.iter_raw_toml_blocks()
-        }
-
-    @property
-    def toml_blocks(self):
-        """
-        Get processed toml blocks as a dictionary.
-
-        :return: Dictionary of block name: parsed_toml
-        """
-        return {
-            block_name: _laz.tomllib.loads(toml_data)
-            for block_name, toml_data in self.raw_toml_blocks.items()
+            for block_name, raw_toml in self.iter_raw_metadata_blocks()
         }
 
     def get_pyproject_raw(self):
@@ -172,7 +176,7 @@ class PEP723Parser:
         :return: pyproject block string
         :raises: KeyError if no pyproject block found
         """
-        return self.get_first_raw_toml("pyproject")
+        return self.get_first_metadata_block("pyproject")
 
     def get_pyproject_toml(self):
         """
@@ -205,7 +209,8 @@ class PEP723Parser:
         If there is no pyproject block this will return None for the python version
         and an empty list of dependencies.
 
-        :return:
+        :return: pyproject 'run' table with requires-python and dependencies values
+                 parsed into SpecifierSet and Requirement objects respectively.
         """
         requires_python = None
         dependencies = []
@@ -220,6 +225,7 @@ class PEP723Parser:
             pyver = run_block.pop(self.PYTHON_VERSION_KEY, None)
             if pyver:
                 requires_python = _laz.SpecifierSet(pyver)
+
             deps = run_block.pop(self.DEPENDENCIES_KEY, None)
             if deps:
                 dependencies = [
