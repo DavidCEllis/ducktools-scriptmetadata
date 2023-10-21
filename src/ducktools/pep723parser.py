@@ -24,11 +24,29 @@ _laz = LazyImporter(
 )
 
 
+def _removeprefix(txt, prefix):
+    # Python 3.8 has no remove_prefix method on str
+    if txt.startswith(prefix):
+        return txt[len(prefix):]
+    else:
+        return txt[:]
+
+
 class PEP723Parser:
+    """
+    Parse PEP723 metadata blocks.
+
+    This provides methods and properties to assist in handling
+    PEP723 metadata blocks.
+
+    get_* methods will raise a KeyError exception if the block is not found
+    Properties will instead return None if the block is not found
+    """
+
     PYTHON_VERSION_KEY = "requires-python"
     DEPENDENCIES_KEY = "dependencies"
 
-    def __init__(self, *, src=None, src_path=None):
+    def __init__(self, *, src=None, src_path=None, encoding="utf-8"):
         if src and src_path:
             raise ValueError("Provide only one of 'src' and 'src_path'")
         elif not (src or src_path):
@@ -36,13 +54,11 @@ class PEP723Parser:
 
         self.src = src
         self.src_path = src_path
-
-        self._raw_toml_blocks = None
-        self._toml_blocks = None
+        self.encoding = encoding
 
     @classmethod
-    def from_path(cls, src_path):
-        return cls(src_path=src_path)
+    def from_path(cls, src_path, encoding="utf-8"):
+        return cls(src_path=src_path, encoding=encoding)
 
     @classmethod
     def from_string(cls, src):
@@ -62,12 +78,14 @@ class PEP723Parser:
         block_name = None
         block_data = []
 
+        consumed_blocks = set()
+
         for line in iterable_src:
             if in_block:
                 if not line.startswith("#"):
                     raise SyntaxError(f"Block {block_name!r} not closed correctly.")
 
-                line = line.removeprefix("#").removeprefix(" ")
+                line = _removeprefix(_removeprefix(line, "#"), " ")
                 if line.strip() == "///":
                     block_text = "".join(block_data)
 
@@ -86,20 +104,26 @@ class PEP723Parser:
                     block_data.append(line)
             else:
                 if line.startswith("#"):
-                    line = line.removeprefix("#").strip()
+                    line = _removeprefix(line, "#").strip()
                     if line.startswith("///"):
                         block_name = line[3:].strip()
+                        if block_name in consumed_blocks:
+                            raise ValueError(f"Multiple {block_name!r} blocks found.")
+                        consumed_blocks.add(block_name)
                         in_block = True
 
         if in_block:
-            raise SyntaxError(f"Block {block_name} not closed correctly.")
+            raise SyntaxError(
+                f"Block {block_name} not closed correctly. "
+                f"A '# ///' block is needed to indicate the end of the block."
+            )
 
     def iter_raw_toml_blocks(self):
         if self.src:
             data = io.StringIO(self.src)
             yield from self._parse_source_blocks(data)
         elif self.src_path:
-            with open(self.src_path, 'r', encoding="utf8") as data:
+            with open(self.src_path, 'r', encoding=self.encoding) as data:
                 yield from self._parse_source_blocks(data)
 
     def iter_toml_blocks(self):
@@ -121,37 +145,25 @@ class PEP723Parser:
         """
         Get the raw toml text blocks as a dictionary.
 
-        This is cached after first reading all blocks.
-
         :return: Dictionary of block name: toml_text
         :rtype: dict[str, str]
         """
-        if self._raw_toml_blocks is None:
-            raw_blocks = {}
-            for block_name, raw_toml in self.iter_raw_toml_blocks():
-                if block_name in raw_blocks:
-                    raise ValueError(f"Multiple {block_name!r} blocks found.")
-                raw_blocks[block_name] = raw_toml
-            self._raw_toml_blocks = raw_blocks
-        return self._raw_toml_blocks
+        return {
+            block_name: raw_toml
+            for block_name, raw_toml in self.iter_raw_toml_blocks()
+        }
 
     @property
     def toml_blocks(self):
         """
         Get processed toml blocks as a dictionary.
 
-        This is cached after first reading all blocks.
-
         :return: Dictionary of block name: parsed_toml
         """
-        if self._toml_blocks is None:
-            toml_blocks = {}
-            for block_name, toml_data in self.raw_toml_blocks.items():
-                if block_name in toml_blocks:
-                    raise ValueError(f"Multiple {block_name!r} blocks found.")
-                toml_blocks[block_name] = toml_data
-            self._toml_blocks = toml_blocks
-        return self._toml_blocks
+        return {
+            block_name: _laz.tomllib.loads(toml_data)
+            for block_name, toml_data in self.raw_toml_blocks.items()
+        }
 
     def get_pyproject_raw(self):
         """
@@ -160,11 +172,7 @@ class PEP723Parser:
         :return: pyproject block string
         :raises: KeyError if no pyproject block found
         """
-        if self._raw_toml_blocks:
-            block = self._raw_toml_blocks.get("pyproject", None)
-        else:
-            block = self.get_first_raw_toml("pyproject")
-        return block
+        return self.get_first_raw_toml("pyproject")
 
     def get_pyproject_toml(self):
         """
@@ -173,11 +181,21 @@ class PEP723Parser:
         :return: pyproject toml block parsed into a dict
         :raises: KeyError if no pyproject block found
         """
-        if self._toml_blocks:
-            block = self._toml_blocks.get("pyproject", None)
-        else:
-            block = _laz.tomllib.loads(self.get_pyproject_raw())
-        return block
+        return _laz.tomllib.loads(self.get_pyproject_raw())
+
+    @property
+    def pyproject_raw(self):
+        try:
+            return self.get_pyproject_raw()
+        except KeyError:
+            return None
+
+    @property
+    def pyproject_toml(self):
+        try:
+            return self.get_pyproject_toml()
+        except KeyError:
+            return None
 
     @property
     def script_dependencies(self):
