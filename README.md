@@ -45,11 +45,14 @@ parser.iter_raw_metadata_blocks()
 # raise a KeyError if not found.
 parser.get_first_metadata_block("pyproject")
 
-# Get the raw pyproject text or raise a KeyError 
+# Get all metadata blocks and unprocessedtext as a dict
+parser.metadata_blocks
+
+# Get the unprocessed pyproject text or raise a KeyError 
 # if there is no block
 parser.get_pyproject_raw()
 
-# Return the raw pyproject text or None if there is no block
+# Return the unprocessed pyproject text or None if there is no block
 parser.pyproject_raw
 
 # Get the pyproject block processed by tomllib/tomli
