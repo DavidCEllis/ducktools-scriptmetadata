@@ -115,6 +115,8 @@ class PEP723Parser:
         """
         Get the raw toml text blocks as a dictionary.
 
+        This is cached after first reading all blocks.
+
         :return: Dictionary of block name: toml_text
         :rtype: dict[str, str]
         """
@@ -132,11 +134,13 @@ class PEP723Parser:
         """
         Get processed toml blocks as a dictionary.
 
+        This is cached after first reading all blocks.
+
         :return: Dictionary of block name: parsed_toml
         """
         if self._toml_blocks is None:
             toml_blocks = {}
-            for block_name, toml_data in self.iter_toml_blocks():
+            for block_name, toml_data in self.raw_toml_blocks.items():
                 if block_name in toml_blocks:
                     raise ValueError(f"Multiple {block_name!r} blocks found.")
                 toml_blocks[block_name] = toml_data
