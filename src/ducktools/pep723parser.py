@@ -48,7 +48,7 @@ class PEP723Parser:
     PYTHON_VERSION_KEY = "requires-python"
     DEPENDENCIES_KEY = "dependencies"
 
-    __slots__ = ("src", "src_path", "encoding")
+    __slots__ = ("src", "src_path", "encoding", "possible_errors")
 
     def __init__(self, *, src=None, src_path=None, encoding="utf-8"):
         if src and src_path:
@@ -59,6 +59,8 @@ class PEP723Parser:
         self.src = src
         self.src_path = src_path
         self.encoding = encoding
+
+        self.possible_errors = []
 
     @classmethod
     def from_path(cls, src_path, encoding="utf-8"):
@@ -84,8 +86,7 @@ class PEP723Parser:
         """
         return cls(src=src)
 
-    @staticmethod
-    def _parse_source_blocks(iterable_src):
+    def _parse_source_blocks(self, iterable_src):
         """
         Iterate over source and yield raw toml source as the blocks occur.
 
@@ -118,11 +119,14 @@ class PEP723Parser:
                     in_block = False
                     block_name, block_data = None, []
                 elif line.startswith("/// "):
+                    # Possibly an unclosed block. Make note.
                     invalid_block_name = line[3:].strip()
-                    raise SyntaxError(
-                        f"New block {invalid_block_name!r} encountered before "
+                    self.possible_errors.append(
+                        f"New {invalid_block_name!r} block encountered before "
                         f"block {block_name!r} closed."
                     )
+                    # Append anyway to match reference behaviour
+                    block_data.append(line)
                 else:
                     block_data.append(line)
             else:
@@ -210,7 +214,16 @@ class PEP723Parser:
         :rtype: dict
         :raises: KeyError if no pyproject block found
         """
-        return _laz.tomllib.loads(self.get_pyproject_raw())
+        try:
+            return _laz.tomllib.loads(self.get_pyproject_raw())
+        except _laz.tomllib.TOMLDecodeError as e:
+            if self.possible_errors:
+                errs = ",".join(self.possible_errors)
+                raise _laz.tomllib.TOMLDecodeError(
+                    f"{e}; Possible PEP723 Errors: {errs}"
+                )
+            else:
+                raise
 
     @property
     def pyproject_raw(self):

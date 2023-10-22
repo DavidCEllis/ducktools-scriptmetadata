@@ -3,6 +3,11 @@ from pathlib import Path
 from packaging.specifiers import SpecifierSet
 from packaging.requirements import Requirement
 
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+
 import pytest
 
 example_folder = Path(__file__).parent / "example_files"
@@ -92,10 +97,24 @@ def test_pep_example_text_script_dependencies():
 
 class TestRaises:
     def test_new_block_without_close(self):
-        test_file = example_folder / "invalid_double_block.py"
+        test_file = example_folder / "valid_but_errors_double_block.py"
         parser = PEP723Parser.from_path(test_file)
-        with pytest.raises(SyntaxError):
-            _ = parser.script_dependencies
+
+        output = (
+            "[run]\n"
+            'requires-python = ">=3.11"\n'
+            'dependencies = [\n'
+            '  "requests<3",\n'
+            '  "rich",\n'
+            ']\n'
+            '/// invalid-termination\n'
+            'new_block\n'
+        )
+        assert parser.pyproject_raw == output
+
+        # Fails TOML parse
+        with pytest.raises(tomllib.TOMLDecodeError):
+            _ = parser.pyproject_toml
 
     def test_block_not_closed(self):
         test_file = example_folder / "pep-723-sample-noclose.py"
