@@ -207,9 +207,6 @@ class PEP723Parser:
 
     @property
     def plain_script_dependencies(self):
-        requires_python = None
-        dependencies = []
-
         try:
             dep_data = self.get_pyproject_toml()
         except KeyError:
@@ -217,13 +214,10 @@ class PEP723Parser:
         else:
             run_block = dep_data.get("run", {})
 
-            # Ensure requires_python and dependencies keys exist
-            requires_python = run_block.pop(self.PYTHON_VERSION_KEY, None)
-            dependencies = run_block.pop(self.DEPENDENCIES_KEY, [])
-
-        # Ensure requires_python and dependencies keys exist
-        run_block[self.PYTHON_VERSION_KEY] = requires_python
-        run_block[self.DEPENDENCIES_KEY] = dependencies
+        if self.PYTHON_VERSION_KEY not in run_block:
+            run_block[self.PYTHON_VERSION_KEY] = None
+        if self.DEPENDENCIES_KEY not in run_block:
+            run_block[self.DEPENDENCIES_KEY] = []
 
         return run_block
 
