@@ -29,7 +29,7 @@ def _removeprefix(txt, prefix):
     # Python 3.8 has no remove_prefix method on str
     # Copied from the PEP that added it with 'self' changed to 'txt'
     if txt.startswith(prefix):
-        return txt[len(prefix):]
+        return txt[len(prefix):]  # fmt: skip
     else:
         return txt[:]  # pragma: no cover
 
@@ -44,6 +44,7 @@ class PEP723Parser:
     get_* methods will raise a KeyError exception if the block is not found
     properties will instead return None if the block is not found
     """
+
     PYTHON_VERSION_KEY = "requires-python"
     DEPENDENCIES_KEY = "dependencies"
 
@@ -151,10 +152,19 @@ class PEP723Parser:
             data = io.StringIO(self.src)
             yield from self._parse_source_blocks(data)
         elif self.src_path:
-            with open(self.src_path, 'r', encoding=self.encoding) as data:
+            with open(self.src_path, "r", encoding=self.encoding) as data:
                 yield from self._parse_source_blocks(data)
 
     def get_first_metadata_block(self, name):
+        """
+        Get the text of the first metadata block that matches the 'TYPE' block
+        given by 'name'
+
+        :param name: name of the 'TYPE' block to extract: eg 'pyproject'
+        :type name: str
+        :return: text of the metadata block
+        :rtype: str
+        """
         for block_name, block_text in self.iter_raw_metadata_blocks():
             if block_name == name:
                 return block_text
@@ -163,7 +173,7 @@ class PEP723Parser:
     @property
     def metadata_blocks(self):
         """
-        Get the raw metadata blocks as a dictionary.
+        Get the text of the metadata blocks as a dictionary.
 
         :return: Dictionary of block name: toml_text
         :rtype: dict[str, str]
@@ -175,9 +185,15 @@ class PEP723Parser:
 
     def get_pyproject_raw(self):
         """
-        Get the raw pyproject block.
+        Get the text of the pyproject block.
 
-        :return: pyproject block string
+        If no block is found, raise a KeyError.
+
+        Use this if you want to use an external TOML parser for the block or
+        for caching on the text of the block.
+
+        :return: pyproject metadata block text
+        :rtype: str
         :raises: KeyError if no pyproject block found
         """
         return self.get_first_metadata_block("pyproject")
@@ -186,13 +202,29 @@ class PEP723Parser:
         """
         Get the parsed pyproject block.
 
+        If no block is found, raise a KeyError.
+
+        Use this if you wish to make use of the full 'pyproject' TOML data.
+
         :return: pyproject toml block parsed into a dict
+        :rtype: dict
         :raises: KeyError if no pyproject block found
         """
         return _laz.tomllib.loads(self.get_pyproject_raw())
 
     @property
     def pyproject_raw(self):
+        """
+        Get the text of the pyproject block
+
+        If no block is found, return None.
+
+        Use this if you want to use an external TOML parser for the block or
+        if caching on the text of the block.
+
+        :return: pyproject metadata block text or None
+        :rtype: str | None
+        """
         try:
             return self.get_pyproject_raw()
         except KeyError:
@@ -200,6 +232,16 @@ class PEP723Parser:
 
     @property
     def pyproject_toml(self):
+        """
+        Get the parsed pyproject block.
+
+        If no block is found, return None.
+
+        Use this if you wish to make use of the full 'pyproject' TOML data.
+
+        :return: pyproject toml block parsed into a dict
+        :rtype: dict | None
+        """
         try:
             return self.get_pyproject_toml()
         except KeyError:
@@ -207,6 +249,19 @@ class PEP723Parser:
 
     @property
     def plain_script_dependencies(self):
+        """
+        Get the [run] block from the 'pyproject' metadata.
+
+        If there is no pyproject block or [run] table,
+        return None for the python version and an empty list of dependencies.
+
+        Use this if you wish to use a tool other than 'packaging' to handle
+        version specifiers and requirements or if you are caching based on
+        the text of the specified requirements.
+
+        :return: pyproject 'run' table
+        :rtype: dict
+        """
         try:
             dep_data = self.get_pyproject_toml()
         except KeyError:
@@ -231,6 +286,7 @@ class PEP723Parser:
 
         :return: pyproject 'run' table with requires-python and dependencies values
                  parsed into SpecifierSet and Requirement objects respectively.
+        :rtype: dict
         """
         requires_python = None
         dependencies = []
@@ -248,9 +304,7 @@ class PEP723Parser:
 
             deps = run_block.pop(self.DEPENDENCIES_KEY, [])
             if deps:
-                dependencies = [
-                    _laz.Requirement(spec) for spec in deps
-                ]
+                dependencies = [_laz.Requirement(spec) for spec in deps]
 
         run_block[self.PYTHON_VERSION_KEY] = requires_python
         run_block[self.DEPENDENCIES_KEY] = dependencies
