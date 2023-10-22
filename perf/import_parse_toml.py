@@ -6,4 +6,4 @@ pth = os.path.realpath(f"{os.path.dirname(__file__)}/../examples/pep-723-sample.
 
 data = PEP723Parser.from_path(pth)
 
-output = data.pyproject_toml
+output = data.plain_script_dependencies
