@@ -101,6 +101,9 @@ class PEP723Parser:
 
         consumed_blocks = set()
 
+        # Reset possible error block to avoid repetition
+        self.possible_errors = []
+
         for line in iterable_src:
             if in_block:
                 if not line.startswith("#"):
