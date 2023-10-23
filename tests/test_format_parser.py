@@ -52,6 +52,7 @@ pep_723_script_dependencies = {
     ]
 }
 
+
 class TestParseOutputFile:
     @property
     def parser(self):
@@ -77,22 +78,25 @@ class TestParseOutputFile:
         assert output == pep_723_script_dependencies
 
 
-def test_pep_example_text_raw():
-    parser = PEP723Parser.from_string(pep_723_ex_raw)
-    output = parser.get_pyproject_raw().strip()
-    assert output == pep_723_ex_extracted
+class TestTextString:
+
+    @property
+    def parser(self):
+        return PEP723Parser.from_string(pep_723_ex_raw)
+
+    def test_pep_example_text_raw(self):
+        output = self.parser.get_pyproject_raw().strip()
+        assert output == pep_723_ex_extracted
 
 
-def test_pep_example_text_toml():
-    parser = PEP723Parser.from_string(pep_723_ex_raw)
-    output = parser.get_pyproject_toml()
-    assert output == pep_723_ex_extracted_dict
+    def test_pep_example_text_toml(self):
+        output = self.parser.get_pyproject_toml()
+        assert output == pep_723_ex_extracted_dict
 
 
-def test_pep_example_text_script_dependencies():
-    parser = PEP723Parser.from_string(pep_723_ex_raw)
-    output = parser.script_dependencies
-    assert output == pep_723_script_dependencies
+    def test_pep_example_text_script_dependencies(self):
+        output = self.parser.script_dependencies
+        assert output == pep_723_script_dependencies
 
 
 class TestRaises:
@@ -171,6 +175,24 @@ class TestMissing:
             "requires-python": None,
             "dependencies": []
         }
+
+
+class TestSpec:
+    # Test that matches the text of the spec but not the regex
+    # as of 23-Oct-2023
+    def test_multi_block(self):
+        test_file = example_folder / "multi_block_discrepency.py"
+        parser = PEP723Parser.from_path(test_file)
+
+        output_text_pyproject = (
+            "run.dependencies = [\n"
+            "    \"ducktools-lazyimporter>=0.1.1\",\n"
+            "]\n"
+        )
+        output_text_newblock = "newblock data\n"
+
+        assert parser.metadata_blocks["pyproject"] == output_text_pyproject
+        assert parser.metadata_blocks["newblock"] == output_text_newblock
 
 
 def test_invalid_parser_init():
