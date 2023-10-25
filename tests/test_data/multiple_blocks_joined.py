@@ -29,5 +29,4 @@ output = {
 is_error = False
 
 # Internals
-strict_error = False
 exact_error = None

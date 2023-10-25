@@ -11,8 +11,4 @@ output = {}
 is_error = False
 
 # Internal
-strict_error = True
-exact_error = SyntaxError(
-    f"Block 'pyproject' not closed correctly. "
-    f"A '# ///' block is needed to indicate the end of the block."
-)
+exact_error = None

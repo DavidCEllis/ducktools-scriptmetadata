@@ -108,10 +108,14 @@ class PEP723Parser:
         for line in iterable_src:
             if in_block:
                 if not line.startswith("#"):
-                    raise SyntaxError(
-                        f"Block {block_name!r} not closed correctly. "
+                    warnings.warn(
+                        f"Potential unclosed block {block_name!r} detected. "
                         f"A '# ///' block is needed to indicate the end of the block."
                     )
+                    # Reset
+                    in_block = False
+                    block_name, block_data = None, []
+                    continue
 
                 line = _removeprefix(_removeprefix(line, "#"), " ")
                 if line.strip() == "///":
@@ -146,8 +150,8 @@ class PEP723Parser:
                         in_block = True
 
         if in_block:
-            raise SyntaxError(
-                f"Block {block_name!r} not closed correctly. "
+            warnings.warn(
+                f"Potential unclosed block {block_name!r} detected. "
                 f"A '# ///' block is needed to indicate the end of the block."
             )
 

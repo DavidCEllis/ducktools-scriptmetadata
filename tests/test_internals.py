@@ -77,13 +77,13 @@ class TestRaises:
     def test_block_not_closed(self):
         test_file = example_folder / "pep-723-sample-noclose.py"
         parser = PEP723Parser.from_path(test_file)
-        with pytest.raises(SyntaxError):
+        with pytest.warns(UserWarning):
             _ = parser.script_dependencies
 
     def test_block_not_closed_eof(self):
         test_file = example_folder / "pep-723-sample-noclose-eof.py"
         parser = PEP723Parser.from_path(test_file)
-        with pytest.raises(SyntaxError):
+        with pytest.warns(UserWarning):
             _ = parser.script_dependencies
 
     def test_repeated_block(self):
