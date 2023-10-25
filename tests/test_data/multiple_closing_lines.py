@@ -8,11 +8,12 @@
 import textwrap
 
 output = {
-    "pyproject":
-        textwrap.dedent("""
+    "pyproject": textwrap.dedent(
+        """
         [run]
         dependencies = ["requests"]
-        """).lstrip()
+        """
+    ).lstrip()
 }
 
 is_error = False

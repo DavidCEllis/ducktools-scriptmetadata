@@ -16,14 +16,14 @@
 import textwrap
 
 output = {
-    "pyproject":
-        textwrap.dedent("""
+    "pyproject": textwrap.dedent(
+        """
         run.dependencies = [
             "ducktools-lazyimporter>=0.1.1",
         ]
-        """).lstrip(),
-    "newblock":
-        "newblock data\n",
+        """
+    ).lstrip(),
+    "newblock": "newblock data\n",
 }
 
 is_error = False

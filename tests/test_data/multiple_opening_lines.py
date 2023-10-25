@@ -8,13 +8,14 @@
 import textwrap
 
 output = {
-    "pyproject":
-        textwrap.dedent("""
+    "pyproject": textwrap.dedent(
+        """
         [run]
         dependencies = ["requests"]
         /// pyproject
         requires-python = ">=3.11"
-        """).lstrip()
+        """
+    ).lstrip()
 }
 
 is_error = False

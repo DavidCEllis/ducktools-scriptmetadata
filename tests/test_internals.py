@@ -19,7 +19,7 @@ pep_723_ex_extracted_dict = {
         "dependencies": [
             "requests<3",
             "rich",
-        ]
+        ],
     }
 }
 
@@ -30,7 +30,7 @@ pep_723_script_dependencies = {
     "dependencies": [
         Requirement("requests<3"),
         Requirement("rich"),
-    ]
+    ],
 }
 
 
@@ -98,7 +98,6 @@ class TestRaises:
 
 
 class TestMissing:
-
     @property
     def parser(self):
         test_file = example_folder / "example_no_pyproject_block.py"
@@ -127,7 +126,7 @@ class TestMissing:
 
         assert parser.script_dependencies == {
             "requires-python": None,
-            "dependencies": []
+            "dependencies": [],
         }
 
 
@@ -139,9 +138,7 @@ class TestSpec:
         parser = PEP723Parser.from_path(test_file)
 
         output_text_pyproject = (
-            "run.dependencies = [\n"
-            "    \"ducktools-lazyimporter>=0.1.1\",\n"
-            "]\n"
+            "run.dependencies = [\n" '    "ducktools-lazyimporter>=0.1.1",\n' "]\n"
         )
         output_text_newblock = "newblock data\n"
 

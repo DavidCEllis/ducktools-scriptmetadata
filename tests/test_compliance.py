@@ -15,7 +15,7 @@ def get_parser(path, parse_type):
 
 
 @pytest.mark.parametrize("parser_type", ["string", "path"])
-@pytest.mark.parametrize('module_name', dir(test_data))
+@pytest.mark.parametrize("module_name", dir(test_data))
 def test_compliance(parser_type, module_name):
     module = getattr(test_data, module_name)
     parser = get_parser(module.__file__, parser_type)
