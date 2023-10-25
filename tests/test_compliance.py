@@ -12,7 +12,7 @@ def test_compliance(module_name):
     try:
         metadata = parser.metadata_blocks
     except Exception as e:
-        assert module.is_error is False or module.strict_error is False
+        assert module.is_error or module.strict_error
         assert type(e) is type(module.exact_error) and e.args == module.exact_error.args
     else:
         assert metadata == module.output
