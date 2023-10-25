@@ -140,6 +140,8 @@ class PEP723Parser:
                         block_name = line[3:].strip()
                         if block_name in consumed_blocks:
                             raise ValueError(f"Multiple {block_name!r} blocks found.")
+                        elif block_name == "pyproject.toml":
+                            warnings.warn(f"{block_name!r} block found, should be 'pyproject'.")
                         consumed_blocks.add(block_name)
                         in_block = True
 
@@ -158,16 +160,10 @@ class PEP723Parser:
         """
         if self.src:
             data = io.StringIO(self.src)
-            for block_name, block_data in self._parse_source_blocks(data):
-                if block_name == "pyproject.toml":
-                    warnings.warn(f"{block_name!r} block found, should be 'pyproject'.")
-                yield block_name, block_data
+            yield from self._parse_source_blocks(data)
         elif self.src_path:
             with open(self.src_path, "r", encoding=self.encoding) as data:
-                for block_name, block_data in self._parse_source_blocks(data):
-                    if block_name == "pyproject.toml":
-                        warnings.warn(f"{block_name!r} block found, should be 'pyproject'.")
-                    yield block_name, block_data
+                yield from self._parse_source_blocks(data)
 
     def get_first_metadata_block(self, name):
         """
