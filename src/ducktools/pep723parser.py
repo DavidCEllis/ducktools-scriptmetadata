@@ -135,7 +135,7 @@ class PEP723Parser:
             else:
                 if line.startswith("#"):
                     line = _removeprefix(line, "#").strip()
-                    if line.startswith("///"):
+                    if line != "///" and line.startswith("///"):
                         block_name = line[3:].strip()
                         if block_name in consumed_blocks:
                             raise ValueError(f"Multiple {block_name!r} blocks found.")
