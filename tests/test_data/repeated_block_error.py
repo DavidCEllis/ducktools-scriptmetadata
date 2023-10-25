@@ -20,5 +20,4 @@ output = {}
 is_error = True
 
 # Internal
-strict_error = True
 exact_error = ValueError(f"Multiple 'pyproject' blocks found.")
