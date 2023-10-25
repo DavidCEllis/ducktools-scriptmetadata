@@ -146,6 +146,17 @@ class TestSpec:
         assert parser.metadata_blocks["newblock"] == output_text_newblock
 
 
+def test_toml_extension_warning():
+    test_file = example_folder / "toml_warning.py"
+    parser = PEP723Parser.from_path(test_file)
+
+    with pytest.warns(
+            UserWarning,
+            match="'pyproject.toml' block found, should be 'pyproject'."
+    ):
+        _ = parser.metadata_blocks
+
+
 def test_invalid_parser_init():
     with pytest.raises(ValueError):
         _ = PEP723Parser()

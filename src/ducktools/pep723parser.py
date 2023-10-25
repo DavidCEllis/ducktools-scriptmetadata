@@ -4,6 +4,7 @@ Lazy PEP723 format parser.
 
 import sys
 import io
+import warnings
 
 from ducktools.lazyimporter import LazyImporter, ModuleImport, FromImport
 
@@ -157,10 +158,16 @@ class PEP723Parser:
         """
         if self.src:
             data = io.StringIO(self.src)
-            yield from self._parse_source_blocks(data)
+            for block_name, block_data in self._parse_source_blocks(data):
+                if block_name == "pyproject.toml":
+                    warnings.warn(f"{block_name!r} block found, should be 'pyproject'.")
+                yield block_name, block_data
         elif self.src_path:
             with open(self.src_path, "r", encoding=self.encoding) as data:
-                yield from self._parse_source_blocks(data)
+                for block_name, block_data in self._parse_source_blocks(data):
+                    if block_name == "pyproject.toml":
+                        warnings.warn(f"{block_name!r} block found, should be 'pyproject'.")
+                    yield block_name, block_data
 
     def get_first_metadata_block(self, name):
         """
