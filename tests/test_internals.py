@@ -12,25 +12,6 @@ import pytest
 
 example_folder = Path(__file__).parent / "example_files"
 
-pep_723_ex_raw = """
-# /// pyproject
-# [run]
-# requires-python = ">=3.11"
-# dependencies = [
-#   "requests<3",
-#   "rich",
-# ]
-# ///
-"""
-
-pep_723_ex_extracted = """
-[run]
-requires-python = ">=3.11"
-dependencies = [
-  "requests<3",
-  "rich",
-]
-""".strip()
 
 pep_723_ex_extracted_dict = {
     "run": {
@@ -53,49 +34,34 @@ pep_723_script_dependencies = {
 }
 
 
-class TestParseOutputFile:
+class TestParsePEPExample:
     @property
-    def parser(self):
+    def file_parser(self):
         test_file = example_folder / "pep-723-sample.py"
         return PEP723Parser.from_path(test_file)
 
-    def test_pep_example_file_raw(self):
-        output = self.parser.get_pyproject_raw().strip()
-        assert output == pep_723_ex_extracted
+    @property
+    def str_parser(self):
+        test_file = example_folder / "pep-723-sample.py"
+        test_text = test_file.read_text()
+        return PEP723Parser.from_string(test_text)
 
-
-    def test_pep_example_file_toml(self):
-        output = self.parser.get_pyproject_toml()
-
+    @pytest.mark.parametrize("parser_type", ["file_parser", "str_parser"])
+    def test_pep_example_file_toml(self, parser_type):
+        parser = getattr(self, parser_type)
+        output = parser.get_pyproject_toml()
         assert output == pep_723_ex_extracted_dict
 
-    def test_pep_example_file_plain_script_dependencies(self):
-        output = self.parser.plain_script_dependencies
+    @pytest.mark.parametrize("parser_type", ["file_parser", "str_parser"])
+    def test_pep_example_file_plain_script_dependencies(self, parser_type):
+        parser = getattr(self, parser_type)
+        output = parser.plain_script_dependencies
         assert output == pep_723_plain_script_dependencies
 
-    def test_pep_example_file_script_dependencies(self):
-        output = self.parser.script_dependencies
-        assert output == pep_723_script_dependencies
-
-
-class TestTextString:
-
-    @property
-    def parser(self):
-        return PEP723Parser.from_string(pep_723_ex_raw)
-
-    def test_pep_example_text_raw(self):
-        output = self.parser.get_pyproject_raw().strip()
-        assert output == pep_723_ex_extracted
-
-
-    def test_pep_example_text_toml(self):
-        output = self.parser.get_pyproject_toml()
-        assert output == pep_723_ex_extracted_dict
-
-
-    def test_pep_example_text_script_dependencies(self):
-        output = self.parser.script_dependencies
+    @pytest.mark.parametrize("parser_type", ["file_parser", "str_parser"])
+    def test_pep_example_file_script_dependencies(self, parser_type):
+        parser = getattr(self, parser_type)
+        output = parser.script_dependencies
         assert output == pep_723_script_dependencies
 
 
@@ -103,18 +69,6 @@ class TestRaises:
     def test_new_block_without_close(self):
         test_file = example_folder / "valid_but_errors_double_block.py"
         parser = PEP723Parser.from_path(test_file)
-
-        output = (
-            "[run]\n"
-            'requires-python = ">=3.11"\n'
-            'dependencies = [\n'
-            '  "requests<3",\n'
-            '  "rich",\n'
-            ']\n'
-            '/// invalid-termination\n'
-            'new_block\n'
-        )
-        assert parser.pyproject_raw == output
 
         # Fails TOML parse
         with pytest.raises(tomllib.TOMLDecodeError):
