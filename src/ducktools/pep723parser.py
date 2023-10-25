@@ -108,7 +108,7 @@ class PEP723Parser:
             if in_block:
                 if not line.startswith("#"):
                     raise SyntaxError(
-                        f"Block {block_name} not closed correctly. "
+                        f"Block {block_name!r} not closed correctly. "
                         f"A '# ///' block is needed to indicate the end of the block."
                     )
 
@@ -144,7 +144,7 @@ class PEP723Parser:
 
         if in_block:
             raise SyntaxError(
-                f"Block {block_name} not closed correctly. "
+                f"Block {block_name!r} not closed correctly. "
                 f"A '# ///' block is needed to indicate the end of the block."
             )
 
@@ -203,7 +203,7 @@ class PEP723Parser:
         :rtype: str
         :raises: KeyError if no pyproject block found
         """
-        return self.get_first_metadata_block("pyproject")
+        return self.metadata_blocks["pyproject"]
 
     def get_pyproject_toml(self):
         """
