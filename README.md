@@ -27,18 +27,15 @@ To create a PEP723Parser there are 2 class methods provided
 ```python
 from pathlib import Path
 
-from ducktools.pep723parser import (
-    metadata_from_path,
-    metadata_from_string,
-)
+from ducktools.pep723parser import EmbeddedMetadata
 
 src_path = Path("examples/pep-723-sample.py")
 
 # Create a parser from a path to a source file
-metadata = metadata_from_path(src_path, encoding="utf-8")
+metadata = EmbeddedMetadata.from_path(src_path, encoding="utf-8")
 
 # Create a parser from source code as a string
-metadata = metadata_from_string(src_path.read_text())
+metadata = EmbeddedMetadata.from_string(src_path.read_text())
 
 # Get all metadata blocks and unprocessed text as a dict
 metadata.blocks

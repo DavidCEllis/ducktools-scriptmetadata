@@ -2,16 +2,16 @@ from pathlib import Path
 
 import pytest
 
-from ducktools.pep723parser import metadata_from_path, metadata_from_string
+from ducktools.pep723parser import EmbeddedMetadata
 import test_data
 
 
 def get_parser(path, parse_type):
     path = Path(path)
     if parse_type == "string":
-        return metadata_from_string(path.read_text())
+        return EmbeddedMetadata.from_string(path.read_text())
     elif parse_type == "path":
-        return metadata_from_path(path)
+        return EmbeddedMetadata.from_path(path)
 
 
 @pytest.mark.parametrize("parser_type", ["string", "path"])

@@ -1,6 +1,4 @@
 from ducktools.pep723parser import (
-    metadata_from_string,
-    metadata_from_path,
     _is_valid_type,
     EmbeddedMetadata,
 )
@@ -43,13 +41,13 @@ class TestParsePEPExample:
     @property
     def file_parser(self):
         test_file = example_folder / "pep-723-sample.py"
-        return metadata_from_path(test_file)
+        return EmbeddedMetadata.from_path(test_file)
 
     @property
     def str_parser(self):
         test_file = example_folder / "pep-723-sample.py"
         test_text = test_file.read_text()
-        return metadata_from_string(test_text)
+        return EmbeddedMetadata.from_string(test_text)
 
     @pytest.mark.parametrize("parser_type", ["file_parser", "str_parser"])
     def test_pep_example_file_toml(self, parser_type):
@@ -83,7 +81,7 @@ class TestParsePEPExample:
 class TestErrors:
     def test_new_block_without_close(self):
         test_file = example_folder / "valid_but_errors_double_block.py"
-        metadata = metadata_from_path(test_file)
+        metadata = EmbeddedMetadata.from_path(test_file)
 
         # Fails TOML parse
         with pytest.raises(tomllib.TOMLDecodeError):
@@ -91,13 +89,13 @@ class TestErrors:
 
     def test_block_not_closed(self):
         test_file = example_folder / "pep-723-sample-noclose.py"
-        metadata = metadata_from_path(test_file)
+        metadata = EmbeddedMetadata.from_path(test_file)
         assert len(metadata.warnings) > 0
         assert "Potential unclosed block" in metadata.warnings[0]
 
     def test_block_not_closed_eof(self):
         test_file = example_folder / "pep-723-sample-noclose-eof.py"
-        metadata = metadata_from_path(test_file)
+        metadata = EmbeddedMetadata.from_path(test_file)
 
         assert len(metadata.warnings) > 0
         assert "Potential unclosed block" in metadata.warnings[0]
@@ -106,7 +104,7 @@ class TestErrors:
         test_file = example_folder / "invalid_repeated_block.py"
 
         with pytest.raises(ValueError):
-            _ = metadata_from_path(test_file)
+            _ = EmbeddedMetadata.from_path(test_file)
 
     def test_malformed_toml(self):
         malformed = (
@@ -115,7 +113,7 @@ class TestErrors:
             "# ///\n"
         )
 
-        metadata = metadata_from_string(malformed)
+        metadata = EmbeddedMetadata.from_string(malformed)
 
         with pytest.raises(tomllib.TOMLDecodeError):
             _ = metadata.pyproject_toml
@@ -125,7 +123,7 @@ class TestMissing:
     @property
     def parser(self):
         test_file = example_folder / "example_no_pyproject_block.py"
-        return metadata_from_path(test_file)
+        return EmbeddedMetadata.from_path(test_file)
 
     def test_missing_none(self):
         parser = self.parser
@@ -146,7 +144,7 @@ class TestSpec:
     # Test that matches the updated spec
     def test_multi_block(self):
         test_file = example_folder / "multi_block_discrepency.py"
-        parser = metadata_from_path(test_file)
+        parser = EmbeddedMetadata.from_path(test_file)
 
         output_text_pyproject = (
             'run.dependencies = [\n'
@@ -165,7 +163,7 @@ class TestSpec:
 
 def test_toml_extension_warning():
     test_file = example_folder / "toml_warning.py"
-    parser = metadata_from_path(test_file)
+    parser = EmbeddedMetadata.from_path(test_file)
 
     assert "'pyproject.toml' block found, should be 'pyproject'." in parser.warnings[0]
 

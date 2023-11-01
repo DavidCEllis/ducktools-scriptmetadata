@@ -162,128 +162,128 @@ class EmbeddedMetadata:
 
         return run_block
 
+    @classmethod
+    def _from_iterable(cls, iterable_src):
+        """
+        Iterate over source and return embedded metadata.
 
-def _parse_metadata_iterable(iterable_src):
-    """
-    Iterate over source and return embedded metadata.
+        :param iterable_src: an iterable of source code: eg an open file
+        :type iterable_src: Iterable[str]
+        :return: EmbeddedMetadata containing data from the source
+        :rtype: EmbeddedMetadata
+        """
 
-    :param iterable_src: an iterable of source code: eg an open file
-    :type iterable_src: Iterable[str]
-    :return: EmbeddedMetadata containing data from the source
-    :rtype: EmbeddedMetadata
-    """
+        # Is the parser within a potential metadata block
+        in_block = False
 
-    # Is the parser within a potential metadata block
-    in_block = False
+        # Has a potential closing '# ///' line been seen for
+        # the current metadata block
+        end_seen = False
 
-    # Has a potential closing '# ///' line been seen for
-    # the current metadata block
-    end_seen = False
+        block_name = None
+        block_data = []
+        partial_block_data = []
 
-    block_name = None
-    block_data = []
-    partial_block_data = []
+        metadata = {}
+        warnings_list = []
 
-    metadata = {}
-    warnings_list = []
+        for line_no, line in enumerate(iterable_src, start=1):
+            if in_block:
+                if not (line.rstrip() == "#" or line.startswith("# ")):
+                    if end_seen:
+                        metadata[block_name] = "".join(block_data)
+                    else:
+                        # Warn about potentially unclosed block
+                        message = (
+                            f"Line {line_no}: "
+                            f"Potential unclosed block {block_name!r} detected. "
+                            f"A '# ///' block is needed to indicate the end of the block."
+                        )
+                        warnings_list.append(message)
 
-    for line_no, line in enumerate(iterable_src, start=1):
-        if in_block:
-            if not (line.rstrip() == "#" or line.startswith("# ")):
-                if end_seen:
-                    metadata[block_name] = "".join(block_data)
+                    # Reset
+                    in_block = False
+                    block_name, block_data = None, []
+                    end_seen = False
+
+                elif line.rstrip() == "# ///":
+                    block_data.extend("".join(partial_block_data))
+                    end_seen = True
+
+                    # reset partial data - add this line
+                    partial_block_data = [line[2:]]
+
                 else:
-                    # Warn about potentially unclosed block
-                    message = (
-                        f"Line {line_no}: "
-                        f"Potential unclosed block {block_name!r} detected. "
-                        f"A '# ///' block is needed to indicate the end of the block."
-                    )
-                    warnings_list.append(message)
-
-                # Reset
-                in_block = False
-                block_name, block_data = None, []
-                end_seen = False
-
-            elif line.rstrip() == "# ///":
-                block_data.extend("".join(partial_block_data))
-                end_seen = True
-
-                # reset partial data - add this line
-                partial_block_data = [line[2:]]
-
-            else:
-                if line.startswith("# /// "):
-                    # Possibly an unclosed block. Make note.
-                    invalid_block_name = line[6:].strip()
-                    warnings_list.append(
-                        f"Line {line_no}: "
-                        f"New {invalid_block_name!r} block encountered before "
-                        f"block {block_name!r} closed."
-                    )
-
-                # Remove '# ' or '#' prefix
-                line = line[2:] if line.startswith("# ") else line[1:]
-                partial_block_data.append(line)
-        else:
-            if line.startswith("#"):
-                line = line.rstrip()
-
-                if line != "# ///" and line.startswith("# /// "):
-                    block_name = line[6:].strip()
-
-                    # Fair chance people will try to call the block
-                    # 'pyproject.toml', warn in that case
-                    if block_name == "pyproject.toml":
+                    if line.startswith("# /// "):
+                        # Possibly an unclosed block. Make note.
+                        invalid_block_name = line[6:].strip()
                         warnings_list.append(
                             f"Line {line_no}: "
-                            f"{block_name!r} block found, should be 'pyproject'."
+                            f"New {invalid_block_name!r} block encountered before "
+                            f"block {block_name!r} closed."
                         )
 
-                    if _is_valid_type(block_name):
-                        if block_name in metadata:
-                            raise ValueError(f"Line {line_no}: Duplicate {block_name!r} block found.")
-                        in_block = True
-                    else:
-                        # Not valid type, remove block name
-                        block_name = None
-    if in_block:
-        if end_seen:
-            metadata[block_name] = "".join(block_data)
-        else:
-            warnings_list.append(
-                f"End of File: "
-                f"Potential unclosed block {block_name!r} detected. "
-                f"A '# ///' block is needed to indicate the end of the block."
-            )
+                    # Remove '# ' or '#' prefix
+                    line = line[2:] if line.startswith("# ") else line[1:]
+                    partial_block_data.append(line)
+            else:
+                if line.startswith("#"):
+                    line = line.rstrip()
 
-    return EmbeddedMetadata(blocks=metadata, warnings=warnings_list)
+                    if line != "# ///" and line.startswith("# /// "):
+                        block_name = line[6:].strip()
 
+                        # Fair chance people will try to call the block
+                        # 'pyproject.toml', warn in that case
+                        if block_name == "pyproject.toml":
+                            warnings_list.append(
+                                f"Line {line_no}: "
+                                f"{block_name!r} block found, should be 'pyproject'."
+                            )
 
-def metadata_from_path(source_path, encoding="utf-8"):
-    """
-    Extract embedded metadata from a given python source file path
+                        if _is_valid_type(block_name):
+                            if block_name in metadata:
+                                raise ValueError(f"Line {line_no}: Duplicate {block_name!r} block found.")
+                            in_block = True
+                        else:
+                            # Not valid type, remove block name
+                            block_name = None
+        if in_block:
+            if end_seen:
+                metadata[block_name] = "".join(block_data)
+            else:
+                warnings_list.append(
+                    f"End of File: "
+                    f"Potential unclosed block {block_name!r} detected. "
+                    f"A '# ///' block is needed to indicate the end of the block."
+                )
 
-    :param source_path: Path to the python source file
-    :type source_path: str | os.PathLike
-    :param encoding: text encoding of source file
-    :type encoding: str
-    :return: metadata block
-    :rtype: EmbeddedMetadata
-    """
-    with open(source_path, encoding=encoding) as src_file:
-        metadata = _parse_metadata_iterable(src_file)
-    return metadata
+        return cls(blocks=metadata, warnings=warnings_list)
 
+    @classmethod
+    def from_path(cls, source_path, encoding="utf-8"):
+        """
+        Extract embedded metadata from a given python source file path
 
-def metadata_from_string(source_string):
-    """
-    Extract embedded metadata from python source code given as a string
+        :param source_path: Path to the python source file
+        :type source_path: str | os.PathLike
+        :param encoding: text encoding of source file
+        :type encoding: str
+        :return: metadata block
+        :rtype: EmbeddedMetadata
+        """
+        with open(source_path, encoding=encoding) as src_file:
+            metadata = cls._from_iterable(src_file)
+        return metadata
 
-    :param source_string: Python source code as string
-    :type source_string: str
-    :return: metadata block
-    :rtype: EmbeddedMetadata
-    """
-    return _parse_metadata_iterable(io.StringIO(source_string))
+    @classmethod
+    def from_string(cls, source_string):
+        """
+        Extract embedded metadata from python source code given as a string
+
+        :param source_string: Python source code as string
+        :type source_string: str
+        :return: metadata block
+        :rtype: EmbeddedMetadata
+        """
+        return cls._from_iterable(io.StringIO(source_string))
