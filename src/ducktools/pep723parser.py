@@ -1,5 +1,5 @@
 """
-Lazy PEP723 format parser.
+Embedded Python metadata format parser.
 """
 
 import sys
@@ -11,7 +11,7 @@ from ducktools.lazyimporter import LazyImporter, TryExceptImport, FromImport
 
 __version__ = "v0.0.1"
 
-# Lazily import tomllib and packaging
+# Lazily import tomllib and packaging as _laz attributes
 _laz = LazyImporter(
     [
         TryExceptImport("tomllib", "tomli", "tomllib"),
@@ -49,301 +49,224 @@ def _is_valid_type(txt):
     return all(c in valid_type for c in txt)
 
 
-class EmbeddedMetadataParser:
+class EmbeddedMetadata:
     """
-    Parse embedded metadata blocks.
-
-    This provides methods and properties to assist in handling
-    embedded metadata blocks.
-
-    get_* methods will raise a KeyError exception if the block is not found
-    properties will instead return None if the block is not found
+    Embedded metadata extracted from a python source file
     """
 
     PYTHON_VERSION_KEY = "requires-python"
     DEPENDENCIES_KEY = "dependencies"
 
-    __slots__ = ("src", "src_path", "encoding", "possible_errors")
-
-    def __init__(self, *, src=None, src_path=None, encoding="utf-8"):
-        if src and src_path:
-            raise ValueError("Provide only one of 'src' and 'src_path'")
-        elif not (src or src_path):
-            raise ValueError("Must provide one of 'src' and 'src_path'")
-
-        self.src = src
-        self.src_path = src_path
-        self.encoding = encoding
-
-        self.possible_errors = []
-
-    @classmethod
-    def from_path(cls, src_path, encoding="utf-8"):
+    def __init__(self, blocks, *, warnings=None):
         """
-        Create an EmbeddedMetadataParser instance given the path to a source file
 
-        :param src_path: path to a python source file to search for embedded metadata
-        :type src_path: str | os.PathLike
-        :param encoding: encoding to use when opening the file.
-        :type encoding: str
-        :return: EmbeddedMetadataParser instance
+        :param blocks: Metadata dict extracted from python source
+        :type blocks: dict[str, str]
+        :param warnings: Possible errors found during parsing
+        :type warnings: list[str]
         """
-        return cls(src_path=src_path, encoding=encoding)
+        self.blocks = blocks
+        self.warnings = warnings
 
-    @classmethod
-    def from_string(cls, src):
-        """
-        Create a EmbeddedMetadataParser instance given source code as a string
-
-        :param src: source code to search for embedded metadata.
-        :type src: str
-        :return: EmbeddedMetadataParser instance
-        """
-        return cls(src=src)
-
-    def _parse_source_blocks(self, iterable_src):
-        """
-        Iterate over source and yield raw toml source as the blocks occur.
-
-        :param iterable_src: an iterable of source code: eg an open file
-        :type iterable_src: Iterable[str]
-        :yield: tuples of (block_name, block_data)
-        :ytype: tuple[str, str]
-        """
-        in_block = False
-        block_name = None
-        block_data = []
-
-        consumed_blocks = set()
-
-        # Reset possible error block to avoid repetition
-        self.possible_errors = []
-
-        for line in iterable_src:
-            if in_block:
-                if not (line.rstrip() == "#" or line.startswith("# ")):
-                    warnings.warn(
-                        f"Potential unclosed block {block_name!r} detected. "
-                        f"A '# ///' block is needed to indicate the end of the block."
-                    )
-                    # Reset
-                    in_block = False
-                    block_name, block_data = None, []
-                elif line.rstrip() == "# ///":
-                    block_text = "".join(block_data)
-
-                    yield block_name, block_text
-
-                    # Reset blocks
-                    in_block = False
-                    block_name, block_data = None, []
-                else:
-                    if line.startswith("# /// "):
-                        # Possibly an unclosed block. Make note.
-                        invalid_block_name = line[5:].strip()
-                        self.possible_errors.append(
-                            f"New {invalid_block_name!r} block encountered before "
-                            f"block {block_name!r} closed."
-                        )
-
-                    # Append
-                    block_data.append(_removeprefix(line[1:], " "))
-            else:
-                if line.startswith("#"):
-                    line = line.rstrip()
-                    if line != "# ///" and line.startswith("# /// "):
-                        line = _removeprefix(line[1:], " ")
-                        block_name = line[4:].strip()
-                        if block_name in consumed_blocks:
-                            raise ValueError(f"Multiple {block_name!r} blocks found.")
-                        elif block_name == "pyproject.toml":
-                            warnings.warn(f"{block_name!r} block found, should be 'pyproject'.")
-
-                        if _is_valid_type(block_name):
-                            consumed_blocks.add(block_name)
-                            in_block = True
-
-        if in_block:
-            warnings.warn(
-                f"Potential unclosed block {block_name!r} detected. "
-                f"A '# ///' block is needed to indicate the end of the block."
-            )
-
-    def iter_raw_metadata_blocks(self):
-        """
-        Iterator that returns raw metadata blocks.
-
-        :yield: block_name, block_text pairs
-        :ytype: tuple[str, str]
-        """
-        if self.src:
-            data = io.StringIO(self.src)
-            yield from self._parse_source_blocks(data)
-        elif self.src_path:
-            with open(self.src_path, "r", encoding=self.encoding) as data:
-                yield from self._parse_source_blocks(data)
-
-    def get_first_metadata_block(self, name):
-        """
-        Get the text of the first metadata block that matches the 'TYPE' block
-        given by 'name'
-
-        :param name: name of the 'TYPE' block to extract: eg 'pyproject'
-        :type name: str
-        :return: text of the metadata block
-        :rtype: str
-        """
-        for block_name, block_text in self.iter_raw_metadata_blocks():
-            if block_name == name:
-                return block_text
-        raise KeyError(f"{name!r} block not found in file.")
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"metadata={self.blocks!r}, "
+            f"warnings={self.warnings!r}"
+            f")"
+        )
 
     @property
-    def metadata_blocks(self):
+    def pyproject_text(self):
         """
-        Get the text of the metadata blocks as a dictionary.
-
-        :return: Dictionary of block name: toml_text
-        :rtype: dict[str, str]
-        """
-        return {
-            block_name: raw_toml
-            for block_name, raw_toml in self.iter_raw_metadata_blocks()
-        }
-
-    def get_pyproject_raw(self):
-        """
-        Get the text of the pyproject block.
-
-        If no block is found, raise a KeyError.
-
-        Use this if you want to use an external TOML parser for the block or
-        for caching on the text of the block.
-
-        :return: pyproject metadata block text
+        Get the raw text from a 'pyproject' metadata block.
+        :return: text source from pyproject block
         :rtype: str
-        :raises: KeyError if no pyproject block found
         """
-        return self.metadata_blocks["pyproject"]
-
-    def get_pyproject_toml(self):
-        """
-        Get the parsed pyproject block.
-
-        If no block is found, raise a KeyError.
-
-        Use this if you wish to make use of the full 'pyproject' TOML data.
-
-        :return: pyproject toml block parsed into a dict
-        :rtype: dict
-        :raises: KeyError if no pyproject block found
-        """
-        try:
-            return _laz.tomllib.loads(self.get_pyproject_raw())
-        except _laz.tomllib.TOMLDecodeError as e:
-            if self.possible_errors:
-                errs = ",".join(self.possible_errors)
-                raise _laz.tomllib.TOMLDecodeError(
-                    f"{e}; Possible Metadata Syntax Errors: {errs}"
-                )
-            else:
-                raise
-
-    @property
-    def pyproject_raw(self):
-        """
-        Get the text of the pyproject block
-
-        If no block is found, return None.
-
-        Use this if you want to use an external TOML parser for the block or
-        if caching on the text of the block.
-
-        :return: pyproject metadata block text or None
-        :rtype: str | None
-        """
-        try:
-            return self.get_pyproject_raw()
-        except KeyError:
-            return None
+        return self.blocks.get("pyproject", None)
 
     @property
     def pyproject_toml(self):
         """
-        Get the parsed pyproject block.
+        The parsed 'TOML' data from a 'pyproject' metadata block
 
-        If no block is found, return None.
-
-        Use this if you wish to make use of the full 'pyproject' TOML data.
-
-        :return: pyproject toml block parsed into a dict
-        :rtype: dict | None
-        """
-        try:
-            return self.get_pyproject_toml()
-        except KeyError:
-            return None
-
-    @property
-    def plain_script_dependencies(self):
-        """
-        Get the [run] block from the 'pyproject' metadata.
-
-        If there is no pyproject block or [run] table,
-        return None for the python version and an empty list of dependencies.
-
-        Use this if you wish to use a tool other than 'packaging' to handle
-        version specifiers and requirements or if you are caching based on
-        the text of the specified requirements.
-
-        :return: pyproject 'run' table
+        :return: Dictionary of keys and data from the 'pyproject' toml block
         :rtype: dict
         """
-        try:
-            dep_data = self.get_pyproject_toml()
-        except KeyError:
-            run_block = {}
+        if self.pyproject_text is None:
+            return {}
         else:
-            run_block = dep_data.get("run", {})
+            try:
+                return _laz.tomllib.loads(self.pyproject_text)
+            except _laz.tomllib.TOMLDecodeError as e:
+                if self.warnings:
+                    warns = ",".join(self.warnings)
+                    raise _laz.tomllib.TOMLDecodeError(
+                        f"{e}; Possible Metadata Issues: {warns}"
+                    )
+                else:
+                    raise
 
-        if self.PYTHON_VERSION_KEY not in run_block:
-            run_block[self.PYTHON_VERSION_KEY] = None
-        if self.DEPENDENCIES_KEY not in run_block:
-            run_block[self.DEPENDENCIES_KEY] = []
+    @property
+    def run_requirements_text(self):
+        """
+        Requirements data from toml block
+        :return:
+        """
+
+        run_block = self.pyproject_toml.get("run", {})
+        run_block[self.PYTHON_VERSION_KEY] = run_block.get(self.PYTHON_VERSION_KEY, None)
+        run_block[self.DEPENDENCIES_KEY] = run_block.get(self.DEPENDENCIES_KEY, [])
 
         return run_block
 
     @property
-    def script_dependencies(self):
+    def run_requirements(self):
         """
-        Get the requirements as packaging Version and Requirement objects.
-
-        If there is no pyproject block this will return None for the python version
-        and an empty list of dependencies.
-
-        :return: pyproject 'run' table with requires-python and dependencies values
-                 parsed into SpecifierSet and Requirement objects respectively.
-        :rtype: dict
+        Requirements data from toml block
+        :return:
         """
+
         requires_python = None
         dependencies = []
 
-        try:
-            block = self.get_pyproject_toml()
-        except KeyError:
-            run_block = {}
-        else:
-            run_block = block.get("run", {})
+        run_block = self.pyproject_toml.get("run", {})
 
-            pyver = run_block.pop(self.PYTHON_VERSION_KEY, None)
-            if pyver:
-                requires_python = _laz.SpecifierSet(pyver)
+        pyver = run_block.pop(self.PYTHON_VERSION_KEY, None)
+        if pyver:
+            requires_python = _laz.SpecifierSet(pyver)
 
-            deps = run_block.pop(self.DEPENDENCIES_KEY, [])
-            if deps:
-                dependencies = [_laz.Requirement(spec) for spec in deps]
+        deps = run_block.pop(self.DEPENDENCIES_KEY, None)
+        if deps:
+            dependencies = [_laz.Requirement(spec) for spec in deps]
 
         run_block[self.PYTHON_VERSION_KEY] = requires_python
         run_block[self.DEPENDENCIES_KEY] = dependencies
 
         return run_block
+
+
+def _parse_metadata_iterable(iterable_src):
+    """
+    Iterate over source and return embedded metadata.
+
+    :param iterable_src: an iterable of source code: eg an open file
+    :type iterable_src: Iterable[str]
+    :return: EmbeddedMetadata containing data from the source
+    :rtype: EmbeddedMetadata
+    """
+
+    # Is the parser within a potential metadata block
+    in_block = False
+
+    # Has a potential closing '# ///' line been seen for
+    # the current metadata block
+    end_seen = False
+
+    block_name = None
+    block_data = []
+    partial_block_data = []
+
+    metadata = {}
+    warnings_list = []
+
+    for line_no, line in enumerate(iterable_src, start=1):
+        if in_block:
+            if not (line.rstrip() == "#" or line.startswith("# ")):
+                if end_seen:
+                    metadata[block_name] = "".join(block_data)
+                else:
+                    # Warn about potentially unclosed block
+                    message = (
+                        f"Line {line_no}: "
+                        f"Potential unclosed block {block_name!r} detected. "
+                        f"A '# ///' block is needed to indicate the end of the block."
+                    )
+                    warnings_list.append(message)
+
+                # Reset
+                in_block = False
+                block_name, block_data = None, []
+                end_seen = False
+
+            elif line.rstrip() == "# ///":
+                block_data.extend("".join(partial_block_data))
+                end_seen = True
+
+                # reset partial data - add this line
+                partial_block_data = [_removeprefix(line[1:], " ")]
+
+            else:
+                if line.startswith("# /// "):
+                    # Possibly an unclosed block. Make note.
+                    invalid_block_name = line[5:].strip()
+                    warnings_list.append(
+                        f"Line {line_no}: "
+                        f"New {invalid_block_name!r} block encountered before "
+                        f"block {block_name!r} closed."
+                    )
+
+                # Append
+                partial_block_data.append(_removeprefix(line[1:], " "))
+        else:
+            if line.startswith("#"):
+                line = line.rstrip()
+
+                if line != "# ///" and line.startswith("# /// "):
+                    line = _removeprefix(line[1:], " ")
+                    block_name = line[4:].strip()
+
+                    # Fair chance people will try to call the block
+                    # 'pyproject.toml', warn in that case
+                    if block_name == "pyproject.toml":
+                        warnings_list.append(
+                            f"Line {line_no}: "
+                            f"{block_name!r} block found, should be 'pyproject'."
+                        )
+
+                    if _is_valid_type(block_name):
+                        if block_name in metadata:
+                            raise ValueError(f"Line {line_no}: Duplicate {block_name!r} block found.")
+                        in_block = True
+                    else:
+                        # Not valid type, remove block name
+                        block_name = None
+    if in_block:
+        if end_seen:
+            metadata[block_name] = "".join(block_data)
+        else:
+            warnings_list.append(
+                f"End of File: "
+                f"Potential unclosed block {block_name!r} detected. "
+                f"A '# ///' block is needed to indicate the end of the block."
+            )
+
+    return EmbeddedMetadata(blocks=metadata, warnings=warnings_list)
+
+
+def metadata_from_path(source_path, encoding="utf-8"):
+    """
+    Extract embedded metadata from a given python source file path
+
+    :param source_path: Path to the python source file
+    :type source_path: str | os.PathLike
+    :param encoding: text encoding of source file
+    :type encoding: str
+    :return: metadata block
+    :rtype: EmbeddedMetadata
+    """
+    with open(source_path, encoding=encoding) as src_file:
+        metadata = _parse_metadata_iterable(src_file)
+    return metadata
+
+
+def metadata_from_string(source_string):
+    """
+    Extract embedded metadata from python source code given as a string
+
+    :param source_string: Python source code as string
+    :type source_string: str
+    :return: metadata block
+    :rtype: EmbeddedMetadata
+    """
+    return _parse_metadata_iterable(io.StringIO(source_string))

@@ -21,9 +21,14 @@ output = {
         run.dependencies = [
             "ducktools-lazyimporter>=0.1.1",
         ]
+        ///
+        
+        Middle Comment
+        
+        /// newblock
+        newblock data
         """
     ).lstrip(),
-    "newblock": "newblock data\n",
 }
 
 is_error = False
