@@ -21,15 +21,6 @@ _laz = LazyImporter(
 )
 
 
-def _removeprefix(txt, prefix):
-    # Python 3.8 has no remove_prefix method on str
-    # Copied from the PEP that added it with 'self' changed to 'txt'
-    if txt.startswith(prefix):
-        return txt[len(prefix):]  # fmt: skip
-    else:
-        return txt[:]  # pragma: no cover
-
-
 # The string library imports 're' so some extra manual work here
 def _is_valid_type(txt):
     """
@@ -198,27 +189,27 @@ def _parse_metadata_iterable(iterable_src):
                 end_seen = True
 
                 # reset partial data - add this line
-                partial_block_data = [_removeprefix(line[1:], " ")]
+                partial_block_data = [line[2:]]
 
             else:
                 if line.startswith("# /// "):
                     # Possibly an unclosed block. Make note.
-                    invalid_block_name = line[5:].strip()
+                    invalid_block_name = line[6:].strip()
                     warnings_list.append(
                         f"Line {line_no}: "
                         f"New {invalid_block_name!r} block encountered before "
                         f"block {block_name!r} closed."
                     )
 
-                # Append
-                partial_block_data.append(_removeprefix(line[1:], " "))
+                # Remove '# ' or '#' prefix
+                line = line[2:] if line.startswith("# ") else line[1:]
+                partial_block_data.append(line)
         else:
             if line.startswith("#"):
                 line = line.rstrip()
 
                 if line != "# ///" and line.startswith("# /// "):
-                    line = _removeprefix(line[1:], " ")
-                    block_name = line[4:].strip()
+                    block_name = line[6:].strip()
 
                     # Fair chance people will try to call the block
                     # 'pyproject.toml', warn in that case
