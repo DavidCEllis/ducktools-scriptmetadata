@@ -8,6 +8,7 @@ scratch/
 build/
 _build/
 dist/
+htmlcov/
 
 __pycache__/
 *.pyc
