@@ -1,6 +1,7 @@
 # ducktools: pep723parser #
 
-Lazy parser for PEP723 embedded TOML data.
+Parser for embedded metadata in python source files 
+as defined in [PEP723](https://peps.python.org/pep-0723/).
 
 ## Example ##
 
