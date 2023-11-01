@@ -22,7 +22,7 @@ Output:
 
 ## Available Methods ##
 
-To create a PEP723Parser there are 2 class methods provided
+Embedded metadata can be extracted via 2 class methods.
 
 ```python
 from pathlib import Path
