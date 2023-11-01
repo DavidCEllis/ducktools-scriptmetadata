@@ -6,10 +6,10 @@ as defined in [PEP723](https://peps.python.org/pep-0723/).
 ## Example ##
 
 ```python
-from ducktools.pep723parser import metadata_from_path
+from ducktools.pep723parser import EmbeddedMetadata
 from pprint import pprint
 
-metadata = metadata_from_path("examples/pep-723-sample.py")
+metadata = EmbeddedMetadata.from_path("examples/pep-723-sample.py")
 
 pprint(metadata.run_requirements)
 ```
