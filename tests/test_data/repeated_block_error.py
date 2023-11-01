@@ -20,4 +20,4 @@ output = {}
 is_error = True
 
 # Internal
-exact_error = ValueError(f"Multiple 'pyproject' blocks found.")
+exact_error = ValueError("Line 10: Duplicate 'pyproject' block found.")

@@ -12,6 +12,8 @@ output = {
         """
         [run]
         dependencies = ["requests"]
+        ///
+        Additional comment
         """
     ).lstrip()
 }

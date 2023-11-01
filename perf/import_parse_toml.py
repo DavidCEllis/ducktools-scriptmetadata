@@ -1,9 +1,9 @@
 import os.path
 
-from ducktools.pep723parser import PEP723Parser
+from ducktools.pep723parser import metadata_from_path
 
 pth = os.path.realpath(f"{os.path.dirname(__file__)}/../examples/pep-723-sample.py")
 
-data = PEP723Parser.from_path(pth)
+data = metadata_from_path(pth)
 
-output = data.plain_script_dependencies
+output = data.run_requirements_text
