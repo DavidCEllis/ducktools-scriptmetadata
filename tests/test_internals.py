@@ -1,4 +1,4 @@
-from ducktools.pep723parser import PEP723Parser
+from ducktools.pep723parser import PEP723Parser, _is_valid_type
 from pathlib import Path
 from packaging.specifiers import SpecifierSet
 from packaging.requirements import Requirement
@@ -163,3 +163,13 @@ def test_invalid_parser_init():
 
     with pytest.raises(ValueError):
         _ = PEP723Parser(src="Code", src_path="path/to/file")
+
+
+def test_valid_types():
+    assert _is_valid_type("pyproject")
+    assert _is_valid_type("test-example123")
+    assert _is_valid_type("123test-example")
+    assert not _is_valid_type("example_with_underscores")
+    assert not _is_valid_type("pyproject.toml")
+    assert not _is_valid_type("random$extra!characters")
+    assert not _is_valid_type("\"internalquotes\"")

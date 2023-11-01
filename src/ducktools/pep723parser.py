@@ -6,20 +6,15 @@ import sys
 import io
 import warnings
 
-from ducktools.lazyimporter import LazyImporter, ModuleImport, FromImport
+from ducktools.lazyimporter import LazyImporter, TryExceptImport, FromImport
 
 
 __version__ = "v0.0.1"
 
-if sys.version_info >= (3, 11):  # pragma: no cover
-    _toml_import = ModuleImport("tomllib")
-else:  # pragma: no cover
-    _toml_import = ModuleImport("tomli", asname="tomllib")
-
 # Lazily import tomllib and packaging
 _laz = LazyImporter(
     [
-        _toml_import,
+        TryExceptImport("tomllib", "tomli", "tomllib"),
         FromImport("packaging.specifiers", "SpecifierSet"),
         FromImport("packaging.requirements", "Requirement"),
     ]
@@ -33,6 +28,25 @@ def _removeprefix(txt, prefix):
         return txt[len(prefix):]  # fmt: skip
     else:
         return txt[:]  # pragma: no cover
+
+
+# The string library imports 're' so some extra manual work here
+def _is_valid_type(txt):
+    """
+    The specification requires TYPE be alphanumeric + hyphens
+
+    :param txt: the block name/TYPE
+    :type txt: str
+    :return: True if the text given is a valid TYPE, False otherwise
+    :rtype: bool
+    """
+    ascii_lowercase = "abcdefghijklmnopqrstuvwxyz"
+    ascii_uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    digits = "0123456789"
+    extra_characters = "-"
+    valid_type = ascii_lowercase + ascii_uppercase + digits + extra_characters
+
+    return all(c in valid_type for c in txt)
 
 
 class PEP723Parser:
@@ -93,7 +107,7 @@ class PEP723Parser:
 
         :param iterable_src: an iterable of source code: eg an open file
         :type iterable_src: Iterable[str]
-        :yield: tuples of (block_name, toml_data)
+        :yield: tuples of (block_name, block_data)
         :ytype: tuple[str, str]
         """
         in_block = False
@@ -107,7 +121,7 @@ class PEP723Parser:
 
         for line in iterable_src:
             if in_block:
-                if not line.startswith("#"):
+                if not (line.rstrip() == "#" or line.startswith("# ")):
                     warnings.warn(
                         f"Potential unclosed block {block_name!r} detected. "
                         f"A '# ///' block is needed to indicate the end of the block."
@@ -115,10 +129,7 @@ class PEP723Parser:
                     # Reset
                     in_block = False
                     block_name, block_data = None, []
-                    continue
-
-                line = _removeprefix(_removeprefix(line, "#"), " ")
-                if line.strip() == "///":
+                elif line.rstrip() == "# ///":
                     block_text = "".join(block_data)
 
                     yield block_name, block_text
@@ -126,28 +137,31 @@ class PEP723Parser:
                     # Reset blocks
                     in_block = False
                     block_name, block_data = None, []
-                elif line.startswith("/// "):
-                    # Possibly an unclosed block. Make note.
-                    invalid_block_name = line[3:].strip()
-                    self.possible_errors.append(
-                        f"New {invalid_block_name!r} block encountered before "
-                        f"block {block_name!r} closed."
-                    )
-                    # Append anyway to match reference behaviour
-                    block_data.append(line)
                 else:
-                    block_data.append(line)
+                    if line.startswith("# /// "):
+                        # Possibly an unclosed block. Make note.
+                        invalid_block_name = line[5:].strip()
+                        self.possible_errors.append(
+                            f"New {invalid_block_name!r} block encountered before "
+                            f"block {block_name!r} closed."
+                        )
+
+                    # Append
+                    block_data.append(_removeprefix(line[1:], " "))
             else:
                 if line.startswith("#"):
-                    line = _removeprefix(line, "#").strip()
-                    if line != "///" and line.startswith("///"):
-                        block_name = line[3:].strip()
+                    line = line.rstrip()
+                    if line != "# ///" and line.startswith("# /// "):
+                        line = _removeprefix(line[1:], " ")
+                        block_name = line[4:].strip()
                         if block_name in consumed_blocks:
                             raise ValueError(f"Multiple {block_name!r} blocks found.")
                         elif block_name == "pyproject.toml":
                             warnings.warn(f"{block_name!r} block found, should be 'pyproject'.")
-                        consumed_blocks.add(block_name)
-                        in_block = True
+
+                        if _is_valid_type(block_name):
+                            consumed_blocks.add(block_name)
+                            in_block = True
 
         if in_block:
             warnings.warn(
