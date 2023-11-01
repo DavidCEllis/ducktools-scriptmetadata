@@ -71,10 +71,14 @@ class EmbeddedMetadata:
     def __repr__(self):
         return (
             f"{self.__class__.__name__}("
-            f"metadata={self.blocks!r}, "
+            f"blocks={self.blocks!r}, "
             f"warnings={self.warnings!r}"
             f")"
         )
+
+    def __eq__(self, other):
+        if self.__class__ is other.__class__:
+            return (self.blocks, self.warnings) == (other.blocks, other.warnings)
 
     @property
     def pyproject_text(self):

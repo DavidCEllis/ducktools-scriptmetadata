@@ -2,6 +2,7 @@ from ducktools.pep723parser import (
     metadata_from_string,
     metadata_from_path,
     _is_valid_type,
+    EmbeddedMetadata,
 )
 from pathlib import Path
 from packaging.specifiers import SpecifierSet
@@ -68,34 +69,56 @@ class TestParsePEPExample:
         output = parser.run_requirements
         assert output == pep_723_run_requirements
 
+    def test_metadata_repr_eq(self):
+        parser = self.file_parser
 
-class TestRaises:
+        rebuilt_parser = eval(
+            repr(parser),
+            {"EmbeddedMetadata": EmbeddedMetadata}
+        )
+
+        assert parser == rebuilt_parser
+
+
+class TestErrors:
     def test_new_block_without_close(self):
         test_file = example_folder / "valid_but_errors_double_block.py"
-        parser = metadata_from_path(test_file)
+        metadata = metadata_from_path(test_file)
 
         # Fails TOML parse
         with pytest.raises(tomllib.TOMLDecodeError):
-            _ = parser.pyproject_toml
+            _ = metadata.pyproject_toml
 
     def test_block_not_closed(self):
         test_file = example_folder / "pep-723-sample-noclose.py"
-        parser = metadata_from_path(test_file)
-        assert len(parser.warnings) > 0
-        assert "Potential unclosed block" in parser.warnings[0]
+        metadata = metadata_from_path(test_file)
+        assert len(metadata.warnings) > 0
+        assert "Potential unclosed block" in metadata.warnings[0]
 
     def test_block_not_closed_eof(self):
         test_file = example_folder / "pep-723-sample-noclose-eof.py"
-        parser = metadata_from_path(test_file)
+        metadata = metadata_from_path(test_file)
 
-        assert len(parser.warnings) > 0
-        assert "Potential unclosed block" in parser.warnings[0]
+        assert len(metadata.warnings) > 0
+        assert "Potential unclosed block" in metadata.warnings[0]
 
     def test_repeated_block(self):
         test_file = example_folder / "invalid_repeated_block.py"
 
         with pytest.raises(ValueError):
             _ = metadata_from_path(test_file)
+
+    def test_malformed_toml(self):
+        malformed = (
+            "# /// pyproject\n"
+            "# !!invalidtoml!!\n"
+            "# ///\n"
+        )
+
+        metadata = metadata_from_string(malformed)
+
+        with pytest.raises(tomllib.TOMLDecodeError):
+            _ = metadata.pyproject_toml
 
 
 class TestMissing:
