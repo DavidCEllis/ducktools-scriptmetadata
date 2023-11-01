@@ -49,12 +49,12 @@ def _is_valid_type(txt):
     return all(c in valid_type for c in txt)
 
 
-class PEP723Parser:
+class EmbeddedMetadataParser:
     """
-    Parse PEP723 metadata blocks.
+    Parse embedded metadata blocks.
 
     This provides methods and properties to assist in handling
-    PEP723 metadata blocks.
+    embedded metadata blocks.
 
     get_* methods will raise a KeyError exception if the block is not found
     properties will instead return None if the block is not found
@@ -80,24 +80,24 @@ class PEP723Parser:
     @classmethod
     def from_path(cls, src_path, encoding="utf-8"):
         """
-        Create a PEP723Parser instance given the path to a source file
+        Create an EmbeddedMetadataParser instance given the path to a source file
 
-        :param src_path: path to a python source file to search for PEP723 metadata
+        :param src_path: path to a python source file to search for embedded metadata
         :type src_path: str | os.PathLike
         :param encoding: encoding to use when opening the file.
         :type encoding: str
-        :return: PEP723Parser instance
+        :return: EmbeddedMetadataParser instance
         """
         return cls(src_path=src_path, encoding=encoding)
 
     @classmethod
     def from_string(cls, src):
         """
-        Create a PEP723Parser instance given source code as a string
+        Create a EmbeddedMetadataParser instance given source code as a string
 
-        :param src: source code to search for PEP723 metadata.
+        :param src: source code to search for embedded metadata.
         :type src: str
-        :return: PEP723Parser instance
+        :return: EmbeddedMetadataParser instance
         """
         return cls(src=src)
 
@@ -171,7 +171,7 @@ class PEP723Parser:
 
     def iter_raw_metadata_blocks(self):
         """
-        Iterator that returns raw PEP723 metadata blocks.
+        Iterator that returns raw metadata blocks.
 
         :yield: block_name, block_text pairs
         :ytype: tuple[str, str]
@@ -244,7 +244,7 @@ class PEP723Parser:
             if self.possible_errors:
                 errs = ",".join(self.possible_errors)
                 raise _laz.tomllib.TOMLDecodeError(
-                    f"{e}; Possible PEP723 Errors: {errs}"
+                    f"{e}; Possible Metadata Syntax Errors: {errs}"
                 )
             else:
                 raise

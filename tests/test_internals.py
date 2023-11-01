@@ -1,4 +1,4 @@
-from ducktools.pep723parser import PEP723Parser, _is_valid_type
+from ducktools.pep723parser import EmbeddedMetadataParser, _is_valid_type
 from pathlib import Path
 from packaging.specifiers import SpecifierSet
 from packaging.requirements import Requirement
@@ -38,13 +38,13 @@ class TestParsePEPExample:
     @property
     def file_parser(self):
         test_file = example_folder / "pep-723-sample.py"
-        return PEP723Parser.from_path(test_file)
+        return EmbeddedMetadataParser.from_path(test_file)
 
     @property
     def str_parser(self):
         test_file = example_folder / "pep-723-sample.py"
         test_text = test_file.read_text()
-        return PEP723Parser.from_string(test_text)
+        return EmbeddedMetadataParser.from_string(test_text)
 
     @pytest.mark.parametrize("parser_type", ["file_parser", "str_parser"])
     def test_pep_example_file_toml(self, parser_type):
@@ -68,7 +68,7 @@ class TestParsePEPExample:
 class TestRaises:
     def test_new_block_without_close(self):
         test_file = example_folder / "valid_but_errors_double_block.py"
-        parser = PEP723Parser.from_path(test_file)
+        parser = EmbeddedMetadataParser.from_path(test_file)
 
         # Fails TOML parse
         with pytest.raises(tomllib.TOMLDecodeError):
@@ -76,19 +76,19 @@ class TestRaises:
 
     def test_block_not_closed(self):
         test_file = example_folder / "pep-723-sample-noclose.py"
-        parser = PEP723Parser.from_path(test_file)
+        parser = EmbeddedMetadataParser.from_path(test_file)
         with pytest.warns(UserWarning):
             _ = parser.script_dependencies
 
     def test_block_not_closed_eof(self):
         test_file = example_folder / "pep-723-sample-noclose-eof.py"
-        parser = PEP723Parser.from_path(test_file)
+        parser = EmbeddedMetadataParser.from_path(test_file)
         with pytest.warns(UserWarning):
             _ = parser.script_dependencies
 
     def test_repeated_block(self):
         test_file = example_folder / "invalid_repeated_block.py"
-        parser = PEP723Parser.from_path(test_file)
+        parser = EmbeddedMetadataParser.from_path(test_file)
 
         with pytest.raises(ValueError):
             _ = parser.metadata_blocks
@@ -101,7 +101,7 @@ class TestMissing:
     @property
     def parser(self):
         test_file = example_folder / "example_no_pyproject_block.py"
-        return PEP723Parser.from_path(test_file)
+        return EmbeddedMetadataParser.from_path(test_file)
 
     def test_missing_errors(self):
         parser = self.parser
@@ -135,7 +135,7 @@ class TestSpec:
     # as of 23-Oct-2023
     def test_multi_block(self):
         test_file = example_folder / "multi_block_discrepency.py"
-        parser = PEP723Parser.from_path(test_file)
+        parser = EmbeddedMetadataParser.from_path(test_file)
 
         output_text_pyproject = (
             "run.dependencies = [\n" '    "ducktools-lazyimporter>=0.1.1",\n' "]\n"
@@ -148,7 +148,7 @@ class TestSpec:
 
 def test_toml_extension_warning():
     test_file = example_folder / "toml_warning.py"
-    parser = PEP723Parser.from_path(test_file)
+    parser = EmbeddedMetadataParser.from_path(test_file)
 
     with pytest.warns(
             UserWarning,
@@ -159,10 +159,10 @@ def test_toml_extension_warning():
 
 def test_invalid_parser_init():
     with pytest.raises(ValueError):
-        _ = PEP723Parser()
+        _ = EmbeddedMetadataParser()
 
     with pytest.raises(ValueError):
-        _ = PEP723Parser(src="Code", src_path="path/to/file")
+        _ = EmbeddedMetadataParser(src="Code", src_path="path/to/file")
 
 
 def test_valid_types():

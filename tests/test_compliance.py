@@ -2,16 +2,16 @@ from pathlib import Path
 
 import pytest
 
-from ducktools.pep723parser import PEP723Parser
+from ducktools.pep723parser import EmbeddedMetadataParser
 import test_data
 
 
 def get_parser(path, parse_type):
     path = Path(path)
     if parse_type == "string":
-        return PEP723Parser.from_string(path.read_text())
+        return EmbeddedMetadataParser.from_string(path.read_text())
     elif parse_type == "path":
-        return PEP723Parser.from_path(path)
+        return EmbeddedMetadataParser.from_path(path)
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")

@@ -5,10 +5,10 @@ Lazy parser for PEP723 embedded TOML data.
 ## Example ##
 
 ```python
-from ducktools.pep723parser import PEP723Parser
+from ducktools.pep723parser import EmbeddedMetadataParser
 from pprint import pprint
 
-parser = PEP723Parser.from_path("examples/pep-723-sample.py")
+parser = EmbeddedMetadataParser.from_path("examples/pep-723-sample.py")
 
 pprint(parser.script_dependencies)
 ```
