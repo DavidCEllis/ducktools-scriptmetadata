@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 
 from ducktools.pep723parser import EmbeddedMetadata
-import test_data
+import compliance_data
 
 
-def get_parser(path, parse_type):
+def parse_data(path, parse_type):
     path = Path(path)
     if parse_type == "string":
         return EmbeddedMetadata.from_string(path.read_text())
@@ -15,14 +15,13 @@ def get_parser(path, parse_type):
 
 
 @pytest.mark.parametrize("parser_type", ["string", "path"])
-@pytest.mark.parametrize("module_name", dir(test_data))
+@pytest.mark.parametrize("module_name", dir(compliance_data))
 def test_compliance(parser_type, module_name):
-    module = getattr(test_data, module_name)
+    module = getattr(compliance_data, module_name)
     try:
-        parser = get_parser(module.__file__, parser_type)
+        metadata = parse_data(module.__file__, parser_type)
     except Exception as e:
         assert module.is_error
         assert type(e) is type(module.exact_error) and e.args == module.exact_error.args
     else:
-        metadata = parser.blocks
-        assert metadata == module.output
+        assert metadata.blocks == module.output

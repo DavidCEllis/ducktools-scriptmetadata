@@ -12,3 +12,5 @@ htmlcov/
 
 __pycache__/
 *.pyc
+
+json_output/
