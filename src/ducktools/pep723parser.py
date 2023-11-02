@@ -132,7 +132,9 @@ class EmbeddedMetadata:
         """
 
         run_block = self.pyproject_toml.get("run", {})
-        run_block[self.PYTHON_VERSION_KEY] = run_block.get(self.PYTHON_VERSION_KEY, None)
+        run_block[self.PYTHON_VERSION_KEY] = run_block.get(
+            self.PYTHON_VERSION_KEY, None
+        )
         run_block[self.DEPENDENCIES_KEY] = run_block.get(self.DEPENDENCIES_KEY, [])
 
         return run_block
@@ -189,7 +191,31 @@ class EmbeddedMetadata:
 
         for line_no, line in enumerate(iterable_src, start=1):
             if in_block:
-                if not (line.rstrip() == "#" or line.startswith("# ")):
+                if line.rstrip() == "# ///":
+                    # End block
+                    block_data.extend("".join(partial_block_data))
+                    end_seen = True
+
+                    # reset partial data - add this line
+                    partial_block_data = [line[2:]]
+
+                elif line.rstrip() == "#" or line.startswith("# "):
+                    # Metadata line
+                    if line.startswith("# /// "):
+                        # Possibly an unclosed block. Make note.
+                        invalid_block_name = line[6:].strip()
+                        warnings_list.append(
+                            f"Line {line_no}: "
+                            f"New {invalid_block_name!r} block encountered before "
+                            f"block {block_name!r} closed."
+                        )
+
+                    # Remove '# ' or '#' prefix
+                    line = line[2:] if line.startswith("# ") else line[1:]
+                    partial_block_data.append(line)
+
+                else:
+                    # Metadata block has ended
                     if end_seen:
                         metadata[block_name] = "".join(block_data)
                     else:
@@ -206,26 +232,6 @@ class EmbeddedMetadata:
                     block_name, block_data = None, []
                     end_seen = False
 
-                elif line.rstrip() == "# ///":
-                    block_data.extend("".join(partial_block_data))
-                    end_seen = True
-
-                    # reset partial data - add this line
-                    partial_block_data = [line[2:]]
-
-                else:
-                    if line.startswith("# /// "):
-                        # Possibly an unclosed block. Make note.
-                        invalid_block_name = line[6:].strip()
-                        warnings_list.append(
-                            f"Line {line_no}: "
-                            f"New {invalid_block_name!r} block encountered before "
-                            f"block {block_name!r} closed."
-                        )
-
-                    # Remove '# ' or '#' prefix
-                    line = line[2:] if line.startswith("# ") else line[1:]
-                    partial_block_data.append(line)
             else:
                 if line.startswith("#"):
                     line = line.rstrip()
@@ -243,11 +249,14 @@ class EmbeddedMetadata:
 
                         if _is_valid_type(block_name):
                             if block_name in metadata:
-                                raise ValueError(f"Line {line_no}: Duplicate {block_name!r} block found.")
+                                raise ValueError(
+                                    f"Line {line_no}: Duplicate {block_name!r} block found."
+                                )
                             in_block = True
                         else:
                             # Not valid type, remove block name
                             block_name = None
+
         if in_block:
             if end_seen:
                 metadata[block_name] = "".join(block_data)
