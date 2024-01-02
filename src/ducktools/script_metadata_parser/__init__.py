@@ -23,35 +23,28 @@
 """
 Embedded Python metadata format parser.
 """
+# Allow use of syntax not supported natively in Python 3.8
+from __future__ import annotations
 
-import sys
 import io
-import warnings
+import os
 
-from ducktools.lazyimporter import LazyImporter, TryExceptImport, FromImport
+try:
+    # Faster
+    from _collections_abc import Iterable
+except ImportError:
+    from collections.abc import Iterable
 
-
-__version__ = "v0.0.1"
-
-# Lazily import tomllib and packaging as _laz attributes
-_laz = LazyImporter(
-    [
-        TryExceptImport("tomllib", "tomli", "tomllib"),
-        FromImport("packaging.specifiers", "SpecifierSet"),
-        FromImport("packaging.requirements", "Requirement"),
-    ]
-)
+__version__ = "v0.0.2"
 
 
 # The string library imports 're' so some extra manual work here
-def _is_valid_type(txt):
+def _is_valid_type(txt: str) -> bool:
     """
     The specification requires TYPE be alphanumeric + hyphens
 
     :param txt: the block name/TYPE
-    :type txt: str
     :return: True if the text given is a valid TYPE, False otherwise
-    :rtype: bool
     """
     ascii_lowercase = "abcdefghijklmnopqrstuvwxyz"
     ascii_uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -62,26 +55,24 @@ def _is_valid_type(txt):
     return all(c in valid_type for c in txt)
 
 
-class EmbeddedMetadata:
+class ScriptMetadata:
     """
     Embedded metadata extracted from a python source file
     """
 
-    PYTHON_VERSION_KEY = "requires-python"
-    DEPENDENCIES_KEY = "dependencies"
+    blocks: dict[str, str]
+    warnings: list[str]
 
-    def __init__(self, blocks, *, warnings=None):
+    def __init__(self, blocks: dict[str, str], *, warnings: list[str] = None):
         """
 
         :param blocks: Metadata dict extracted from python source
-        :type blocks: dict[str, str]
         :param warnings: Possible errors found during parsing
-        :type warnings: list[str]
         """
         self.blocks = blocks
         self.warnings = warnings
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}("
             f"blocks={self.blocks!r}, "
@@ -89,90 +80,18 @@ class EmbeddedMetadata:
             f")"
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if self.__class__ is other.__class__:
             return (self.blocks, self.warnings) == (other.blocks, other.warnings)
-
-    @property
-    def pyproject_text(self):
-        """
-        Get the raw text from a 'pyproject' metadata block.
-        :return: text source from pyproject block
-        :rtype: str
-        """
-        return self.blocks.get("pyproject", None)
-
-    @property
-    def pyproject_toml(self):
-        """
-        The parsed 'TOML' data from a 'pyproject' metadata block
-
-        :return: Dictionary of keys and data from the 'pyproject' toml block
-        :rtype: dict
-        """
-        if self.pyproject_text is None:
-            return {}
-        else:
-            try:
-                return _laz.tomllib.loads(self.pyproject_text)
-            except _laz.tomllib.TOMLDecodeError as e:
-                if self.warnings:
-                    warns = ",".join(self.warnings)
-                    raise _laz.tomllib.TOMLDecodeError(
-                        f"{e}; Possible Metadata Issues: {warns}"
-                    )
-                else:
-                    raise
-
-    @property
-    def run_requirements_text(self):
-        """
-        Requirements data from toml block
-        :return:
-        """
-
-        run_block = self.pyproject_toml.get("run", {})
-        run_block[self.PYTHON_VERSION_KEY] = run_block.get(
-            self.PYTHON_VERSION_KEY, None
-        )
-        run_block[self.DEPENDENCIES_KEY] = run_block.get(self.DEPENDENCIES_KEY, [])
-
-        return run_block
-
-    @property
-    def run_requirements(self):
-        """
-        Requirements data from toml block
-        :return:
-        """
-
-        requires_python = None
-        dependencies = []
-
-        run_block = self.pyproject_toml.get("run", {})
-
-        pyver = run_block.pop(self.PYTHON_VERSION_KEY, None)
-        if pyver:
-            requires_python = _laz.SpecifierSet(pyver)
-
-        deps = run_block.pop(self.DEPENDENCIES_KEY, None)
-        if deps:
-            dependencies = [_laz.Requirement(spec) for spec in deps]
-
-        run_block[self.PYTHON_VERSION_KEY] = requires_python
-        run_block[self.DEPENDENCIES_KEY] = dependencies
-
-        return run_block
+        return False
 
     @classmethod
-    def _from_iterable(cls, iterable_src):
+    def from_iterable(cls, iterable_src: Iterable[str]) -> ScriptMetadata:
         """
         Iterate over source and return embedded metadata.
 
         :param iterable_src: an iterable of source code: eg an open file
-        :type iterable_src: Iterable[str]
         :return: EmbeddedMetadata containing data from the source
-        :rtype: EmbeddedMetadata
         """
 
         # Is the parser within a potential metadata block
@@ -239,14 +158,6 @@ class EmbeddedMetadata:
                     if line != "# ///" and line.startswith("# /// "):
                         block_name = line[6:].strip()
 
-                        # Fair chance people will try to call the block
-                        # 'pyproject.toml', warn in that case
-                        if block_name == "pyproject.toml":
-                            warnings_list.append(
-                                f"Line {line_no}: "
-                                f"{block_name!r} block found, should be 'pyproject'."
-                            )
-
                         if _is_valid_type(block_name):
                             if block_name in metadata:
                                 raise ValueError(
@@ -254,6 +165,12 @@ class EmbeddedMetadata:
                                 )
                             in_block = True
                         else:
+                            message = (
+                                f"Line {line_no}: "
+                                f"{block_name!r} is not a valid block name. "
+                                f"Block names must consist of alphanumeric characters and '-' only."
+                            )
+                            warnings_list.append(message)
                             # Not valid type, remove block name
                             block_name = None
 
@@ -270,29 +187,28 @@ class EmbeddedMetadata:
         return cls(blocks=metadata, warnings=warnings_list)
 
     @classmethod
-    def from_path(cls, source_path, encoding="utf-8"):
+    def from_path(
+        cls,
+        source_path: str | os.PathLike,
+        encoding: str = "utf-8",
+    ) -> ScriptMetadata:
         """
         Extract embedded metadata from a given python source file path
 
         :param source_path: Path to the python source file
-        :type source_path: str | os.PathLike
         :param encoding: text encoding of source file
-        :type encoding: str
         :return: metadata block
-        :rtype: EmbeddedMetadata
         """
         with open(source_path, encoding=encoding) as src_file:
-            metadata = cls._from_iterable(src_file)
+            metadata = cls.from_iterable(src_file)
         return metadata
 
     @classmethod
-    def from_string(cls, source_string):
+    def from_string(cls, source_string: str) -> ScriptMetadata:
         """
         Extract embedded metadata from python source code given as a string
 
         :param source_string: Python source code as string
-        :type source_string: str
         :return: metadata block
-        :rtype: EmbeddedMetadata
         """
-        return cls._from_iterable(io.StringIO(source_string))
+        return cls.from_iterable(io.StringIO(source_string))

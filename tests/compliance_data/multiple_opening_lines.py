@@ -1,18 +1,16 @@
-# /// pyproject
-# [run]
+# /// script
 # dependencies = ["requests"]
-# /// pyproject
+# /// script
 # requires-python = ">=3.11"
 # ///
 
 import textwrap
 
 output = {
-    "pyproject": textwrap.dedent(
+    "script": textwrap.dedent(
         """
-        [run]
         dependencies = ["requests"]
-        /// pyproject
+        /// script
         requires-python = ">=3.11"
         """
     ).lstrip()

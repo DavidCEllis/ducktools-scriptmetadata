@@ -7,6 +7,7 @@ from . import (
     repeated_block_error,
     unclosed_block_example,
     unclosed_block_eof,
+    invalid_block_name,
 )
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "repeated_block_error",
     "unclosed_block_example",
     "unclosed_block_eof",
+    "invalid_block_name",
 ]
 
 

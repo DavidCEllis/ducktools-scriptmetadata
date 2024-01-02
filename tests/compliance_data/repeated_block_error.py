@@ -1,5 +1,4 @@
-# /// pyproject
-# [run]
+# /// script
 # requires-python = ">=3.11"
 # dependencies = [
 #   "requests<3",
@@ -7,8 +6,7 @@
 # ]
 # ///
 
-# /// pyproject
-# [run]
+# /// script
 # requires-python = ">=3.11"
 # dependencies = [
 #   "requests<3",
@@ -20,4 +18,4 @@ output = {}
 is_error = True
 
 # Internal
-exact_error = ValueError("Line 10: Duplicate 'pyproject' block found.")
+exact_error = ValueError("Line 9: Duplicate 'script' block found.")
