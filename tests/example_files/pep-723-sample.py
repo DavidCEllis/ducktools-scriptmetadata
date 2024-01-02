@@ -1,12 +1,10 @@
-# /// pyproject
-# [run]
+# /// script
 # requires-python = ">=3.11"
 # dependencies = [
 #   "requests<3",
 #   "rich",
 # ]
 # ///
-
 
 import requests
 from rich.pretty import pprint
