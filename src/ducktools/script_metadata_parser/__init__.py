@@ -41,6 +41,7 @@ __all__ = [
     "parse_file",
     "parse_iterable",
     "ScriptMetadata",
+    "iter_parse",
 ]
 
 
@@ -61,11 +62,16 @@ def _is_valid_type(txt: str) -> bool:
     return all(c in valid_type for c in txt)
 
 
-def _iter_parse(
-    script_data: Iterable[str], *, start_line: int = 1
+def iter_parse(
+    script_data: Iterable[str],
+    *,
+    start_line: int = 1,
 ) -> Iterator[tuple[str | None, str | None, list[str]]]:
     """
     Iterate over source and yield embedded metadata.
+
+    This function implements the actual parsing logic. If a user wishes
+    to implement early exit or raising warnings directly this can be used.
 
     :param script_data: an iterable of source code: eg an open file
     :param start_line: line number to start iterating from
@@ -186,6 +192,7 @@ class ScriptMetadata:
 
     def __init__(self, blocks: dict[str, str], *, warnings: list[str] = None):
         """
+        Parsed script metadata blocks and related warnings.
 
         :param blocks: Metadata dict extracted from python source
                        Keys are block names and values the raw text of block data.
@@ -209,12 +216,23 @@ class ScriptMetadata:
 
 
 def parse_iterable(
-    iterable_data: Iterable[str], *, start_line: int = 1
+    iterable_data: Iterable[str],
+    *,
+    start_line: int = 1,
 ) -> ScriptMetadata:
+    """
+    Given an iterable of strings (lines of code), parse the object for inline metadata
+    blocks.
+
+    :param iterable_data: Iterable of lines of code
+    :param start_line: Line number where file parsing starts - used for warnings
+    :return: Embedded metadata object with blocks and warnings
+    """
+
     blocks = {}
     warnings = []
 
-    for block_name, block_text, warning_list in _iter_parse(
+    for block_name, block_text, warning_list in iter_parse(
         iterable_data, start_line=start_line
     ):
         if block_name:
@@ -225,14 +243,34 @@ def parse_iterable(
     return ScriptMetadata(blocks, warnings=warnings)
 
 
-def parse_source(script_text: str, *, start_line: int = 1) -> ScriptMetadata:
+def parse_source(
+    script_text: str,
+    *,
+    start_line: int = 1,
+) -> ScriptMetadata:
+    """
+    Parse a source code string for inline metadata blocks
+
+    :param script_text: Source of python script as string
+    :param start_line: Line number where file parsing starts - used for warnings
+    :return: Embedded metadata object with blocks and warnings
+    """
     data = io.StringIO(script_text)
     return parse_iterable(data, start_line=start_line)
 
 
 def parse_file(
-    file_path: str | bytes | os.PathLike, *, encoding: str = "utf-8"
+    file_path: str | bytes | os.PathLike,
+    *,
+    encoding: str = "utf-8",
 ) -> ScriptMetadata:
+    """
+    Parse a python source file for inline metadata blocks
+
+    :param file_path: Path to the python source
+    :param encoding: Text encoding of the file
+    :return: Embedded metadata object with blocks and warnings
+    """
     with open(file_path, mode="r", encoding=encoding) as f:
         metadata = parse_iterable(f)
 
