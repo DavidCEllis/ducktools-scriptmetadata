@@ -62,9 +62,7 @@ def _is_valid_type(txt: str) -> bool:
 
 
 def _iter_parse(
-        script_data: Iterable[str],
-        *,
-        start_line: int = 1
+    script_data: Iterable[str], *, start_line: int = 1
 ) -> Iterator[tuple[str | None, str | None, list[str]]]:
     """
     Iterate over source and yield embedded metadata.
@@ -210,11 +208,15 @@ class ScriptMetadata:
         return False
 
 
-def parse_iterable(iterable_data: Iterable[str], *, start_line: int = 1) -> ScriptMetadata:
+def parse_iterable(
+    iterable_data: Iterable[str], *, start_line: int = 1
+) -> ScriptMetadata:
     blocks = {}
     warnings = []
 
-    for block_name, block_text, warning_list in _iter_parse(iterable_data, start_line=start_line):
+    for block_name, block_text, warning_list in _iter_parse(
+        iterable_data, start_line=start_line
+    ):
         if block_name:
             blocks[block_name] = block_text
 
@@ -228,7 +230,9 @@ def parse_source(script_text: str, *, start_line: int = 1) -> ScriptMetadata:
     return parse_iterable(data, start_line=start_line)
 
 
-def parse_file(file_path: str | bytes | os.PathLike, *, encoding: str = "utf-8") -> ScriptMetadata:
+def parse_file(
+    file_path: str | bytes | os.PathLike, *, encoding: str = "utf-8"
+) -> ScriptMetadata:
     with open(file_path, mode="r", encoding=encoding) as f:
         metadata = parse_iterable(f)
 
