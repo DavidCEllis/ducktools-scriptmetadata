@@ -9,8 +9,7 @@ is_error = False
 exact_error = None
 
 
-# /// pyproject
-# [run]
+# /// script
 # requires-python = ">=3.11"
 # dependencies = [
 #   "requests<3",

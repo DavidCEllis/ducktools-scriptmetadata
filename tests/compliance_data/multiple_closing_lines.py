@@ -1,5 +1,4 @@
-# /// pyproject
-# [run]
+# /// script
 # dependencies = ["requests"]
 # ///
 # Additional comment
@@ -8,9 +7,8 @@
 import textwrap
 
 output = {
-    "pyproject": textwrap.dedent(
+    "script": textwrap.dedent(
         """
-        [run]
         dependencies = ["requests"]
         ///
         Additional comment

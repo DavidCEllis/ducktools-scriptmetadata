@@ -16,15 +16,16 @@ import pytest
 import compliance_data
 
 # Use your parser here
-from ducktools.pep723parser import EmbeddedMetadata
+from ducktools.script_metadata_parser import ScriptMetadata
+
 
 @pytest.mark.parametrize("module_name", dir(compliance_data))
 def test_compliance(module_name):
     module = getattr(compliance_data, module_name)
     module_path = module.__file__
-    
+
     try:
-        metadata = EmbeddedMetadata.from_path(module_path)
+        metadata = ScriptMetadata.from_path(module_path)
     except Exception as e:
         assert module.is_error
     else:

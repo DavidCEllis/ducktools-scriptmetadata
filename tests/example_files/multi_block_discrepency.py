@@ -1,8 +1,8 @@
 # Multiple block descrepency between the regex in the pep
 # and the text description.
 
-# /// pyproject
-# run.dependencies = [
+# /// script
+# dependencies = [
 #     "ducktools-lazyimporter>=0.1.1",
 # ]
 # ///

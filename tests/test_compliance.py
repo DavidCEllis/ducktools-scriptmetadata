@@ -2,16 +2,16 @@ from pathlib import Path
 
 import pytest
 
-from ducktools.pep723parser import EmbeddedMetadata
+from ducktools.script_metadata_parser import parse_file, parse_source
 import compliance_data
 
 
 def parse_data(path, parse_type):
     path = Path(path)
     if parse_type == "string":
-        return EmbeddedMetadata.from_string(path.read_text())
+        return parse_source(path.read_text())
     elif parse_type == "path":
-        return EmbeddedMetadata.from_path(path)
+        return parse_file(path)
 
 
 @pytest.mark.parametrize("parser_type", ["string", "path"])

@@ -2,8 +2,7 @@
 The original example block from the PEP.
 """
 
-# /// pyproject
-# [run]
+# /// script
 # requires-python = ">=3.11"
 # dependencies = [
 #   "requests<3",
@@ -14,9 +13,8 @@ The original example block from the PEP.
 import textwrap
 
 output = {
-    "pyproject": textwrap.dedent(
+    "script": textwrap.dedent(
         """
-        [run]
         requires-python = ">=3.11"
         dependencies = [
           "requests<3",

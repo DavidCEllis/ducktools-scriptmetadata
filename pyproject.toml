@@ -6,18 +6,14 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name="ducktools-pep723parser"
+name="ducktools-script_metadata_parser"
 description="LazyImporter class to manage imports on attribute access."
 authors = [
   { name="David C Ellis" },
 ]
 readme="README.md"
 requires-python = ">=3.8"
-dependencies = [
-    "tomli >= 1.1.0 ; python_version < '3.11'",
-    "packaging >= 23.2",
-    "ducktools-lazyimporter >= 0.1.2",
-]
+dependencies = []
 classifiers = [
     "Development Status :: 1 - Planning",
     "Programming Language :: Python :: 3.8",
@@ -37,4 +33,10 @@ testing = ["pytest", "pytest-cov"]
 where = ["src"]
 
 [tool.setuptools.dynamic]
-version = {attr = "ducktools.pep723parser.__version__"}
+version = {attr = "ducktools.script_metadata_parser.__version__"}
+
+[tool.pytest.ini_options]
+addopts= "--cov=src/ --cov-report=term-missing"
+testpaths = [
+    "tests",
+]
