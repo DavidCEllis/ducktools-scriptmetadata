@@ -1,5 +1,6 @@
 from . import (
     basic_pep_example,
+    basic_pep_example_eof,
     multiple_blocks_joined,
     multiple_closing_lines,
     multiple_opening_lines,
@@ -12,6 +13,7 @@ from . import (
 
 __all__ = [
     "basic_pep_example",
+    "basic_pep_example_eof",
     "multiple_blocks_joined",
     "multiple_closing_lines",
     "multiple_opening_lines",

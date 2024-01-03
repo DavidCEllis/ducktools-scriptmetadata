@@ -32,7 +32,7 @@ import os
 try:
     # Faster
     from _collections_abc import Iterable, Iterator
-except ImportError:
+except ImportError:  # pragma: nocover
     from collections.abc import Iterable, Iterator
 
 __version__ = "v0.0.3"

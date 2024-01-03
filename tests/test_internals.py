@@ -29,6 +29,35 @@ class TestParsePEPExample:
         assert parser == rebuilt_parser
 
 
+def test_eq_true():
+    ex_1 = example_folder / "pep-723-sample.py"
+
+    data_1 = parse_file(ex_1)
+    data_2 = parse_file(ex_1)
+
+    assert data_1 == data_2
+
+
+def test_eq_false():
+    ex_1 = example_folder / "pep-723-sample.py"
+    ex_2 = example_folder / "basic_alternate_example.py"
+
+    data_1 = parse_file(ex_1)
+    data_2 = parse_file(ex_2)
+
+    assert data_1 != data_2
+
+
+def test_eq_othertype():
+    ex_1 = example_folder / "pep-723-sample.py"
+
+    data_1 = parse_file(ex_1)
+
+    non_data = "Not Data"
+
+    assert data_1 != non_data
+
+
 class TestErrors:
 
     def test_block_not_closed(self):
