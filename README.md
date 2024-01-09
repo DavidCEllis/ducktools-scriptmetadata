@@ -26,12 +26,126 @@ metadata = parse_source(src_path.read_text())
 with src_path.open("r") as f:
     metadata = parse_iterable(f, start_line=1)
 
-# Get all metadata blocks and unprocessed text as a dict
+# Get all metadata block names and plaintext content as a dict
 metadata.blocks
 
-# View any warnings about potentially malformed blocks
+# Get a list of warnings about potentially malformed blocks
 metadata.warnings
 ```
+
+## Inputs and Outputs ##
+
+### PEP-723 Example Input ###
+
+```
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "requests<3",
+#   "rich",
+# ]
+# ///
+```
+
+**metadata.blocks**:
+```
+{'script': 'requires-python = ">=3.11"\ndependencies = [\n  "requests<3",\n  "rich",\n]\n'}
+```
+
+**metadata.warnings**:
+```
+[]
+```
+
+### Incomplete block ###
+
+```
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "requests<3",
+#   "rich",
+# ]
+```
+
+**metadata.blocks**:
+```
+{}
+```
+
+**metadata.warnings**:
+```
+["Line 7: Potential unclosed block 'script' detected. A '# ///' block is needed to indicate the end of the block."]
+```
+
+## Example of usage with toml parsing/validation ##
+
+An example script using `tomllib`/`tomli` to parse TOML and `packaging` to handle version and dependency specifiers.
+
+```python
+import warnings
+from pathlib import Path
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+    
+from packaging.specifiers import SpecifierSet
+from packaging.requirements import Requirement
+
+from ducktools.scriptmetadata import parse_file
+
+def parse_requirements(f):
+    data = parse_file(f)
+    
+    if script_block := data.blocks.get("script"):
+        deps = tomllib.loads(script_block)
+        requires_python = SpecifierSet(deps["requires-python"]) if "requires-python" in deps else None
+        dependencies = [Requirement(dep) for dep in deps.get("dependencies", [])]
+    else:
+        requires_python = None
+        dependencies = []
+        
+    if data.warnings:
+        for message in data.warnings:
+            warnings.warn(message)
+    
+    return {
+        "requires-python": requires_python,
+        "dependencies": dependencies,
+    }
+
+example_success = Path("examples/pep-723-sample.py")
+example_warning = Path("examples/incomplete_example.py")
+
+print("Valid metadata block output:")
+print(parse_requirements(example_success))
+print()
+print("Incomplete metadata block output:")
+print(parse_requirements(example_warning))
+```
+
+Output:
+```
+Valid metadata block output:
+{'requires-python': <SpecifierSet('>=3.11')>, 'dependencies': [<Requirement('requests<3')>, <Requirement('rich')>]}
+
+Incomplete metadata block output:
+{'requires-python': None, 'dependencies': []}
+<Source Location>: UserWarning: Line 7: Potential unclosed block 'script' detected. A '# ///' block is needed to indicate the end of the block.
+  warnings.warn(message)
+```
+
+## Why not include the TOML/requirements parsing in this module ##
+
+I wanted to provide a parser that purely handled the *new* format for metadata.
+TOML parsing and validation of version specifiers can then be handled by whichever
+library the user prefers.
+
+For example: If someone wanted to add inline metadata support to an existing tool
+that used `rtoml` to handle other toml parsing duties then it would make sense
+for the toml parsing to be handled by that package instead of making the choice
+to use `tomllib` (and incurring the import cost).
 
 ## Why not use the regex from the PEP? ##
 
