@@ -1,4 +1,4 @@
-from ducktools.script_metadata_parser import (
+from ducktools.scriptmetadata import (
     _is_valid_type,
     parse_file,
     parse_source,

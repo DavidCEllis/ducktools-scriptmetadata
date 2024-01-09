@@ -1,4 +1,4 @@
-# ducktools: script_metadata_parser #
+# ducktools: scriptmetadata #
 
 Parser for embedded metadata in python source files 
 as defined in [PEP723](https://peps.python.org/pep-0723/).
@@ -12,7 +12,7 @@ in any way.
 ```python
 from pathlib import Path
 
-from ducktools.script_metadata_parser import parse_source, parse_file, parse_iterable
+from ducktools.scriptmetadata import parse_source, parse_file, parse_iterable
 
 src_path = Path("examples/pep-723-sample.py")
 
@@ -39,14 +39,19 @@ Using the regex would correctly extract blocks that have been defined correctly
 it does not provide a way to give additional warnings to users about potentially
 malformed blocks.
 
+This parser will collect warnings if it encounters an unclosed block, if it
+detects multiple valid header lines within a block, and if a potential block 
+name contains an invalid character.
+It will raise an exception if multiple blocks with the same name are encountered.
+
 Importing the python regex module is also slower than parsing the source in this
 way.
 
 Python 3.12 on Windows parsing the example file:
 
-```
-hyperfine -w3 -r100 "python -c \"import re\"" "python perf\ducktools_parse.py" "python perf\regex_parse.py"
+`hyperfine -w3 -r100 "python -c \"import re\"" "python perf\ducktools_parse.py" "python perf\regex_parse.py"`
 
+```
 Benchmark 1: python -c "import re"
   Time (mean ± σ):      29.6 ms ±   0.9 ms    [User: 14.9 ms, System: 14.7 ms]
   Range (min … max):    28.3 ms …  32.8 ms    100 runs

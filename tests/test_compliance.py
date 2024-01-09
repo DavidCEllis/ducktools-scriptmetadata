@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ducktools.script_metadata_parser import parse_file, parse_source
+from ducktools.scriptmetadata import parse_file, parse_source
 import compliance_data
 
 

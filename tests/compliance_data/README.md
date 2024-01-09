@@ -16,7 +16,7 @@ import pytest
 import compliance_data
 
 # Use your parser here
-from ducktools.script_metadata_parser import ScriptMetadata
+from ducktools.scriptmetadata import parse_file
 
 
 @pytest.mark.parametrize("module_name", dir(compliance_data))
@@ -25,7 +25,7 @@ def test_compliance(module_name):
     module_path = module.__file__
 
     try:
-        metadata = ScriptMetadata.from_path(module_path)
+        metadata = parse_file(module_path)
     except Exception as e:
         assert module.is_error
     else:
