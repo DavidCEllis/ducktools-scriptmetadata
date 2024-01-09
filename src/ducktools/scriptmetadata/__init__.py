@@ -62,7 +62,10 @@ class MetadataWarning:
 
     def __eq__(self, other):
         if type(self) is type(other):
-            return (self.line_number, self.message) == (other.line_number, other.message)
+            return (self.line_number, self.message) == (
+                other.line_number,
+                other.message,
+            )
         return NotImplemented
 
 
@@ -134,10 +137,12 @@ def iter_parse(
                     # Possibly an unclosed block. Make note.
                     invalid_block_name = line[6:].strip()
                     message = MetadataWarning(
-                            line_no,
-                            (f"New {invalid_block_name!r} block encountered "
-                             f"before block {block_name!r} closed.")
-                        )
+                        line_no,
+                        (
+                            f"New {invalid_block_name!r} block encountered "
+                            f"before block {block_name!r} closed."
+                        ),
+                    )
 
                     warnings_list.append(message)
 
@@ -154,12 +159,12 @@ def iter_parse(
                     warnings_list = []
                 else:
                     # Warn about potentially unclosed block
-                    message = (
-                        MetadataWarning(
-                            line_no,
-                            (f"Potential unclosed block {block_name!r} detected. "
-                             "A '# ///' block is needed to indicate the end of the block.")
-                        )
+                    message = MetadataWarning(
+                        line_no,
+                        (
+                            f"Potential unclosed block {block_name!r} detected. "
+                            "A '# ///' block is needed to indicate the end of the block."
+                        ),
                     )
                     warnings_list.append(message)
 
@@ -185,8 +190,10 @@ def iter_parse(
                     else:
                         message = MetadataWarning(
                             line_no,
-                            (f"{block_name!r} is not a valid block name. "
-                             "Block names must consist of alphanumeric characters and '-' only.")
+                            (
+                                f"{block_name!r} is not a valid block name. "
+                                "Block names must consist of alphanumeric characters and '-' only."
+                            ),
                         )
                         warnings_list.append(message)
                         # Not valid type, remove block name
@@ -201,8 +208,10 @@ def iter_parse(
         else:
             message = MetadataWarning(
                 line_no,
-                (f"Potential unclosed block {block_name!r} detected. "
-                 "A '# ///' block is needed to indicate the end of the block.")
+                (
+                    f"Potential unclosed block {block_name!r} detected. "
+                    "A '# ///' block is needed to indicate the end of the block."
+                ),
             )
             warnings_list.append(message)
 
