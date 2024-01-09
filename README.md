@@ -75,7 +75,7 @@ metadata.warnings
 
 **metadata.warnings**:
 ```
-["Line 7: Potential unclosed block 'script' detected. A '# ///' block is needed to indicate the end of the block."]
+[MetadataWarning(line_number=7, message="Potential unclosed block 'script' detected. A '# ///' block is needed to indicate the end of the block.")]
 ```
 
 ## Example of usage with toml parsing/validation ##
@@ -108,7 +108,7 @@ def parse_requirements(f):
         
     if data.warnings:
         for message in data.warnings:
-            warnings.warn(message)
+            warnings.warn(str(message))
     
     return {
         "requires-python": requires_python,

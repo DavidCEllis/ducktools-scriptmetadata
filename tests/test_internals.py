@@ -3,6 +3,7 @@ from ducktools.scriptmetadata import (
     parse_file,
     parse_source,
     ScriptMetadata,
+    MetadataWarning,
 )
 from pathlib import Path
 
@@ -64,20 +65,38 @@ class TestErrors:
         test_file = example_folder / "pep-723-sample-noclose.py"
         metadata = parse_file(test_file)
         assert len(metadata.warnings) > 0
-        assert "Potential unclosed block" in metadata.warnings[0]
+        assert "Potential unclosed block" in metadata.warnings[0].message
 
     def test_block_not_closed_eof(self):
         test_file = example_folder / "pep-723-sample-noclose-eof.py"
         metadata = parse_file(test_file)
 
         assert len(metadata.warnings) > 0
-        assert "Potential unclosed block" in metadata.warnings[0]
+        assert "Potential unclosed block" in metadata.warnings[0].message
 
     def test_repeated_block(self):
         test_file = example_folder / "invalid_repeated_block.py"
 
         with pytest.raises(ValueError):
             _ = parse_file(test_file)
+
+
+def test_metadata_dunders():
+    ex = MetadataWarning(1, "Mismatch")
+    ex_clone = MetadataWarning(1, "Mismatch")
+    ex_diffline = MetadataWarning(2, "Mismatch")
+    ex_diffmessage = MetadataWarning(1, "Alt Mismatch")
+
+    assert ex == ex_clone
+    assert ex != ex_diffline
+    assert ex != ex_diffmessage
+    assert ex != "Mismatch"
+
+    assert repr(ex) == "MetadataWarning(line_number=1, message='Mismatch')"
+
+    assert eval(repr(ex)) == ex
+
+    assert str(ex) == "Line 1: Mismatch"
 
 
 def test_valid_types():
