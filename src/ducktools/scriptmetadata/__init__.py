@@ -35,7 +35,7 @@ try:
 except ImportError:  # pragma: nocover
     from collections.abc import Iterable, Iterator
 
-__version__ = "v0.0.3"
+__version__ = "v0.1.0"
 __all__ = [
     "parse_source",
     "parse_file",
