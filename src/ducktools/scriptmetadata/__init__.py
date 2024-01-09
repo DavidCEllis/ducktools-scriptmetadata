@@ -238,9 +238,9 @@ class ScriptMetadata:
         )
 
     def __eq__(self, other) -> bool:
-        if self.__class__ is other.__class__:
+        if type(self) is type(other):
             return (self.blocks, self.warnings) == (other.blocks, other.warnings)
-        return False
+        return NotImplemented
 
 
 def parse_iterable(
