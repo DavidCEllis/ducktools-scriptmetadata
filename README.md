@@ -9,6 +9,12 @@ or from an iterable of lines (such as an open file).
 This module does not attempt to parse the contents of the metadata blocks
 in any way.
 
+## How to Install ##
+
+Install this module via PyPI
+
+`python -m pip install ducktools-scriptmetadata`
+
 ```python
 from pathlib import Path
 
@@ -149,9 +155,9 @@ to use `tomllib` (and incurring the import cost).
 
 ## Why not use the regex from the PEP? ##
 
-Using the regex would correctly extract blocks that have been defined correctly
-it does not provide a way to give additional warnings to users about potentially
-malformed blocks.
+While using the regex would correctly extract valid metadata blocks it does not 
+provide a way to give additional warnings to users about potential issues with 
+incorrect block formatting.
 
 This parser will collect warnings if it encounters an unclosed block, if it
 detects multiple valid header lines within a block, and if a potential block 
