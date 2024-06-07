@@ -29,6 +29,8 @@ from __future__ import annotations
 import io
 import os
 
+from ducktools.classbuilder import AnnotationClass
+
 try:
     # Faster
     from _collections_abc import Iterable, Iterator
@@ -46,27 +48,12 @@ __all__ = [
 ]
 
 
-class MetadataWarning:
+class MetadataWarning(AnnotationClass):
     line_number: int
     message: str
 
-    def __init__(self, line_number: int, message: str):
-        self.line_number = line_number
-        self.message = message
-
-    def __repr__(self):
-        return f"{type(self).__name__}(line_number={self.line_number!r}, message={self.message!r})"
-
     def __str__(self):
         return f"Line {self.line_number}: {self.message}"
-
-    def __eq__(self, other):
-        if type(self) is type(other):
-            return (self.line_number, self.message) == (
-                other.line_number,
-                other.message,
-            )
-        return NotImplemented
 
 
 # The string library imports 're' so some extra manual work here
@@ -86,6 +73,7 @@ def _is_valid_type(txt: str) -> bool:
     return all(c in valid_type for c in txt)
 
 
+# noinspection PyArgumentList
 def iter_parse(
     script_data: Iterable[str],
     *,
@@ -219,37 +207,17 @@ def iter_parse(
         yield None, None, warnings_list
 
 
-class ScriptMetadata:
+class ScriptMetadata(AnnotationClass):
     """
     Embedded metadata extracted from a python source file
+
+    :param blocks: Metadata dict extracted from python source
+                   Keys are block names and values the raw text of block data.
+    :param warnings: Possible errors found during parsing
     """
 
     blocks: dict[str, str]
     warnings: list[MetadataWarning]
-
-    def __init__(self, blocks: dict[str, str], warnings: list[MetadataWarning]):
-        """
-        Parsed script metadata blocks and related warnings.
-
-        :param blocks: Metadata dict extracted from python source
-                       Keys are block names and values the raw text of block data.
-        :param warnings: Possible errors found during parsing
-        """
-        self.blocks = blocks
-        self.warnings = warnings
-
-    def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}("
-            f"blocks={self.blocks!r}, "
-            f"warnings={self.warnings!r}"
-            f")"
-        )
-
-    def __eq__(self, other) -> bool:
-        if type(self) is type(other):
-            return (self.blocks, self.warnings) == (other.blocks, other.warnings)
-        return NotImplemented
 
 
 def parse_iterable(
@@ -277,6 +245,7 @@ def parse_iterable(
 
         warnings.extend(warning_list)
 
+    # noinspection PyArgumentList
     return ScriptMetadata(blocks, warnings)
 
 

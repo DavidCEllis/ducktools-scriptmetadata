@@ -173,19 +173,19 @@ Python 3.12 on Windows parsing the example file:
 
 ```
 Benchmark 1: python -c "import re"
-  Time (mean ± σ):      29.6 ms ±   0.9 ms    [User: 14.9 ms, System: 14.7 ms]
-  Range (min … max):    28.3 ms …  32.8 ms    100 runs
+  Time (mean ± σ):      30.0 ms ±   0.6 ms    [User: 15.1 ms, System: 11.7 ms]
+  Range (min … max):    29.0 ms …  33.5 ms    100 runs
 
 Benchmark 2: python perf\ducktools_parse.py
-  Time (mean ± σ):      24.4 ms ±   0.5 ms    [User: 11.1 ms, System: 14.4 ms]
-  Range (min … max):    23.4 ms …  26.4 ms    100 runs
+  Time (mean ± σ):      25.9 ms ±   0.8 ms    [User: 11.8 ms, System: 13.4 ms]
+  Range (min … max):    24.9 ms …  30.0 ms    100 runs
 
 Benchmark 3: python perf\regex_parse.py
-  Time (mean ± σ):      30.5 ms ±   0.6 ms    [User: 12.2 ms, System: 14.9 ms]
-  Range (min … max):    29.5 ms …  32.7 ms    100 runs
+  Time (mean ± σ):      31.6 ms ±   1.6 ms    [User: 16.7 ms, System: 13.9 ms]
+  Range (min … max):    29.9 ms …  40.5 ms    100 runs
 
 Summary
   python perf\ducktools_parse.py ran
-    1.21 ± 0.05 times faster than python -c "import re"
-    1.25 ± 0.04 times faster than python perf\regex_parse.py
+    1.16 ± 0.04 times faster than python -c "import re"
+    1.22 ± 0.07 times faster than python perf\regex_parse.py
 ```
