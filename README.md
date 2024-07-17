@@ -1,7 +1,9 @@
 # ducktools: scriptmetadata #
 
 Parser for embedded metadata in python source files 
-as defined in [PEP723](https://peps.python.org/pep-0723/).
+originally defined in [PEP-723](https://peps.python.org/pep-0723/) 
+and 
+[specified on packaging.python.org](https://packaging.python.org/en/latest/specifications/inline-script-metadata/#inline-script-metadata).
 
 Inline script metadata can be extracted from a file path, from a string
 or from an iterable of lines (such as an open file).
@@ -153,7 +155,7 @@ that used `rtoml` to handle other toml parsing duties then it would make sense
 for the toml parsing to be handled by that package instead of making the choice
 to use `tomllib` (and incurring the import cost).
 
-## Why not use the regex from the PEP? ##
+## Why not use the regex from the PEP/Specification page? ##
 
 While using the regex would correctly extract valid metadata blocks it does not 
 provide a way to give additional warnings to users about potential issues with 
