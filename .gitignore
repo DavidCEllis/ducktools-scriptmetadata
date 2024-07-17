@@ -14,3 +14,6 @@ __pycache__/
 *.pyc
 
 json_output/
+
+# Ignore generated version file
+_version.py

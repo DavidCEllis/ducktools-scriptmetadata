@@ -29,7 +29,9 @@ from __future__ import annotations
 import io
 import os
 
-from ducktools.classbuilder import AnnotationClass
+from ducktools.classbuilder import slotclass, Field, SlotFields
+
+from ._version import __version__
 
 try:
     # Faster
@@ -37,7 +39,6 @@ try:
 except ImportError:  # pragma: nocover
     from collections.abc import Iterable, Iterator
 
-__version__ = "v0.1.2"
 __all__ = [
     "parse_source",
     "parse_file",
@@ -48,7 +49,9 @@ __all__ = [
 ]
 
 
-class MetadataWarning(AnnotationClass):
+@slotclass
+class MetadataWarning:
+    __slots__ = SlotFields(line_number=Field(), message=Field())
     line_number: int
     message: str
 
@@ -207,7 +210,8 @@ def iter_parse(
         yield None, None, warnings_list
 
 
-class ScriptMetadata(AnnotationClass):
+@slotclass
+class ScriptMetadata:
     """
     Embedded metadata extracted from a python source file
 
@@ -215,7 +219,7 @@ class ScriptMetadata(AnnotationClass):
                    Keys are block names and values the raw text of block data.
     :param warnings: Possible errors found during parsing
     """
-
+    __slots__ = SlotFields(blocks=Field(), warnings=Field())
     blocks: dict[str, str]
     warnings: list[MetadataWarning]
 
