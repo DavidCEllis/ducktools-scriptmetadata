@@ -29,7 +29,7 @@ from __future__ import annotations
 import io
 import os
 
-from ducktools.classbuilder import slotclass, Field, SlotFields
+from ducktools.classbuilder.prefab import Prefab
 
 from ._version import __version__
 
@@ -49,9 +49,7 @@ __all__ = [
 ]
 
 
-@slotclass
-class MetadataWarning:
-    __slots__ = SlotFields(line_number=Field(), message=Field())
+class MetadataWarning(Prefab):
     line_number: int
     message: str
 
@@ -102,11 +100,11 @@ def iter_parse(
     end_seen = False
 
     block_name = None
-    block_data = []
-    partial_block_data = []
+    block_data: list[str] = []
+    partial_block_data: list[str] = []
 
-    used_blocks = set()
-    warnings_list = []
+    used_blocks: set[str] = set()
+    warnings_list: list[MetadataWarning] = []
 
     line_no = 0  # Make sure line number is defined even if there is no data
 
@@ -210,8 +208,7 @@ def iter_parse(
         yield None, None, warnings_list
 
 
-@slotclass
-class ScriptMetadata:
+class ScriptMetadata(Prefab):
     """
     Embedded metadata extracted from a python source file
 
@@ -219,8 +216,7 @@ class ScriptMetadata:
                    Keys are block names and values the raw text of block data.
     :param warnings: Possible errors found during parsing
     """
-    __slots__ = SlotFields(blocks=Field(), warnings=Field())
-    blocks: dict[str, str]
+    blocks: dict[str, str | None]
     warnings: list[MetadataWarning]
 
 
@@ -238,8 +234,8 @@ def parse_iterable(
     :return: Embedded metadata object with blocks and warnings
     """
 
-    blocks = {}
-    warnings = []
+    blocks: dict[str, str | None] = {}
+    warnings: list[MetadataWarning] = []
 
     for block_name, block_text, warning_list in iter_parse(
         iterable_data, start_line=start_line
