@@ -27,9 +27,12 @@ classifiers = [
 dynamic = ['version']
 license = {file = "LICENSE.md"}
 
-[project.optional-dependencies]
-testing = ["pytest", "pytest-cov"]
-typing = ["mypy"]
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "pytest-cov>=6.1",
+    "mypy>=1.16",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
