@@ -32,7 +32,7 @@ import os
 
 from ducktools.classbuilder.prefab import Prefab
 
-from ._version import __version__
+from ._version import __version__ as __version__
 
 try:
     # Faster
