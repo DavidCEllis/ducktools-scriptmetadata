@@ -125,15 +125,16 @@ def iter_parse(
                 if line.startswith("# /// "):
                     # Possibly an unclosed block. Make note.
                     invalid_block_name = line[6:].strip()
-                    message = MetadataWarning(
-                        line_no,
-                        (
-                            f"New {invalid_block_name!r} block encountered "
-                            f"before block {block_name!r} closed."
-                        ),
-                    )
 
-                    warnings_list.append(message)
+                    if _is_valid_type(invalid_block_name):
+                        message = MetadataWarning(
+                            line_no,
+                            (
+                                f"New {invalid_block_name!r} block encountered "
+                                f"before block {block_name!r} closed."
+                            ),
+                        )
+                        warnings_list.append(message)
 
                 # Remove '# ' or '#' prefix
                 line = line[2:] if line.startswith("# ") else line[1:]

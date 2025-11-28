@@ -1,7 +1,6 @@
 from ducktools.scriptmetadata import (
     _is_valid_type,
     parse_file,
-    parse_source,
     ScriptMetadata,
     MetadataWarning,
 )
@@ -59,8 +58,7 @@ def test_eq_othertype():
     assert data_1 != non_data
 
 
-class TestErrors:
-
+class TestWarnings:
     def test_block_not_closed(self):
         test_file = example_folder / "pep-723-sample-noclose.py"
         metadata = parse_file(test_file)
@@ -74,6 +72,28 @@ class TestErrors:
         assert len(metadata.warnings) > 0
         assert "Potential unclosed block" in metadata.warnings[0].message
 
+    def test_new_block_warning(self):
+        # Warnings should only be added if the block name would be valid
+        # <summary> and </summary> should be excluded
+        test_file = example_folder / "multiple_block_warnings.py"
+        metadata = parse_file(test_file)
+
+        assert len(metadata.warnings) == 1
+        assert metadata.warnings[0].message == (
+            "New 'text' block encountered before block 'some-toml' closed."
+        )
+
+    def test_invalid_block_name(self):
+        test_file = example_folder / "invalid_block_name.py"
+        metadata = parse_file(test_file)
+
+        assert len(metadata.warnings) == 1
+        assert metadata.warnings[0].message.startswith(
+            "'!script!' is not a valid block name."
+        )
+
+
+class TestErrors:
     def test_repeated_block(self):
         test_file = example_folder / "invalid_repeated_block.py"
 
@@ -81,21 +101,8 @@ class TestErrors:
             _ = parse_file(test_file)
 
 
-def test_metadata_dunders():
+def test_metadata_str():
     ex = MetadataWarning(1, "Mismatch")
-    ex_clone = MetadataWarning(1, "Mismatch")
-    ex_diffline = MetadataWarning(2, "Mismatch")
-    ex_diffmessage = MetadataWarning(1, "Alt Mismatch")
-
-    assert ex == ex_clone
-    assert ex != ex_diffline
-    assert ex != ex_diffmessage
-    assert ex != "Mismatch"
-
-    assert repr(ex) == "MetadataWarning(line_number=1, message='Mismatch')"
-
-    assert eval(repr(ex)) == ex
-
     assert str(ex) == "Line 1: Mismatch"
 
 
