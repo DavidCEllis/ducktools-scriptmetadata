@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2023-2024 David C Ellis
+# Copyright (c) 2023-2025 David C Ellis
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,8 @@
 """
 Embedded Python metadata format parser.
 """
-# Allow use of typing syntax not supported natively in Python 3.8/3.9
+# Use future imports to prevent the performance regression with using PEP-649
+# deferred annotations
 from __future__ import annotations
 
 import io
@@ -31,7 +32,7 @@ import os
 
 from ducktools.classbuilder.prefab import Prefab
 
-from ._version import __version__
+from ._version import __version__ as __version__
 
 try:
     # Faster

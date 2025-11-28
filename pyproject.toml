@@ -22,10 +22,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
-    "License :: OSI Approved :: MIT License",
 ]
 dynamic = ['version']
-license = {file = "LICENSE.md"}
+license = "MIT"
 
 [dependency-groups]
 dev = [
