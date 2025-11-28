@@ -13,7 +13,7 @@ authors = [
 ]
 readme="README.md"
 requires-python = ">=3.10"
-dependencies = ["ducktools-classbuilder"]
+dependencies = ["ducktools-classbuilder>=0.12.2"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3.10",
