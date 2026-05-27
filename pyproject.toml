@@ -12,15 +12,14 @@ authors = [
   { name="David C Ellis" },
 ]
 readme="README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = ["ducktools-classbuilder>=0.12.2"]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Operating System :: OS Independent",
 ]
 dynamic = ['version']
@@ -44,3 +43,11 @@ addopts= "--cov=src/ --cov-report=term-missing"
 testpaths = [
     "tests",
 ]
+
+[tool.uv]
+exclude-newer = "1 week"
+
+[tool.uv.exclude-newer-package]
+# Exclude other projects I own as they may contain early fixes
+ducktools-classbuilder = false
+reannotate = false
